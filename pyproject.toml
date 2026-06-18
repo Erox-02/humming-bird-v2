@@ -29,38 +29,14 @@ classifiers = [
 ]
 
 dependencies = [
-"joblib>=1.3.0",
-"scikit-learn>=1.6.1",
-"numpy>=1.24.0"
+    "joblib>=1.3.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.6.1",
+    "lightgbm>=4.0.0"
 ]
 
 [project.urls]
 Repository = "https://github.com/Erox-02/humming-bird-v2"
-
-[project.optional-dependencies]
-dev = [
-"pytest>=7.0",
-"pytest-cov>=4.0",
-"black>=23.0",
-"mypy>=1.0",
-"ruff>=0.1.0",
-"build>=1.0",
-"twine>=4.0"
-]
-
-docs = [
-"sphinx>=7.0",
-"sphinx-rtd-theme>=1.0"
-]
-
-llm = [
-"openai>=1.3.0"
-]
-
-fastapi = [
-"fastapi>=0.104.0",
-"uvicorn>=0.24.0"
-]
 
 [tool.setuptools.packages.find]
 include = ["hbp100*"]
@@ -68,7 +44,7 @@ exclude = ["tests*", "examples*", "benchmarks*"]
 
 [tool.setuptools.package-data]
 hbp100 = [
-"assets/*.pkl"
+    "assets/*.pkl"
 ]
 
 [tool.black]
@@ -85,12 +61,4 @@ ignore_missing_imports = true
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "D"]
-ignore = ["D100", "D104", "D107"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "--cov=hbp100 --cov-report=html --cov-report=term"
+select = ["E", "F", "W", "I", "N"]

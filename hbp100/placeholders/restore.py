@@ -9,6 +9,7 @@ class PlaceholderRestorer:
     def __init__(self):
         self._vault = metadata_vault
         self._pattern = re.compile(r'\[[A-Z_]+_\d+\]')
+        self.metadata = {}
         logger.debug("Placeholder restorer initialized")
 
     def restore(self, text: str, metadata: Optional[Dict[str, str]] = None) -> str:
@@ -108,3 +109,12 @@ class PlaceholderRestorer:
                 result[ph] = None
 
         return result
+
+    def update_metadata(self, metadata: dict):
+        """
+        Update metadata mappings.
+        """
+        if hasattr(self, "metadata"):
+            self.metadata.update(metadata)
+        else:
+            self.metadata = dict(metadata)
