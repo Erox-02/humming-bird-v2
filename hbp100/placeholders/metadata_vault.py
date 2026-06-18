@@ -1,30 +1,48 @@
-from typing import Dict
+from typing import Dict, Optional
+from threading import Lock
 
 class MetadataVault:
-"""
-Stores placeholder ↔ original value mappings.
-"""
+    def __init__(self):
+        self._metadata: Dict[str, str] = {}
+        self._lock = Lock()
 
-```
-def __init__(self):
-    self._vault: Dict[str, str] = {}
+    def set(self, placeholder: str, value: str) -> None:
+        with self._lock:
+            self._metadata[placeholder] = value
 
-def add(self, placeholder: str, original_value: str) -> None:
-    self._vault[placeholder] = original_value
+    def get(self, placeholder: str) -> Optional[str]:
+        with self._lock:
+            return self._metadata.get(placeholder)
 
-def get(self) -> Dict[str, str]:
-    return self._vault.copy()
+    def update(self, mappings: Dict[str, str]) -> None:
+        with self._lock:
+            self._metadata.update(mappings)
 
-def clear(self) -> None:
-    self._vault.clear()
+    def get_all(self) -> Dict[str, str]:
+        with self._lock:
+            return self._metadata.copy()
 
-def show(self) -> None:
-    if not self._vault:
-        print("Metadata vault is empty.")
-        return
+    def show(self) -> Dict[str, str]:
+        return self.get_all()
 
-    for placeholder, value in self._vault.items():
-        print(f"{placeholder} = {value}")
-```
+    def clear(self) -> None:
+        with self._lock:
+            self._metadata.clear()
+
+    def remove(self, placeholder: str) -> None:
+        with self._lock:
+            self._metadata.pop(placeholder, None)
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._metadata)
+
+    def __contains__(self, placeholder: str) -> bool:
+        with self._lock:
+            return placeholder in self._metadata
+
+    def __getitem__(self, placeholder: str) -> str:
+        with self._lock:
+            return self._metadata[placeholder]
 
 metadata_vault = MetadataVault()

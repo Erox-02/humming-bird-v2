@@ -1,57 +1,110 @@
 import re
 from typing import Dict, Optional, List
-
 from hbp100.placeholders.metadata_vault import metadata_vault
 from hbp100.utils.logger import get_logger
 
-logger = get_logger(**name**)
-
-def restore(text: str) -> str:
-"""
-Simple public API:
-
-```
-    restored = restore(response)
-"""
-
-restored = text
-
-for placeholder, value in metadata_vault.get().items():
-    restored = restored.replace(placeholder, value)
-
-return restored
-```
+logger = get_logger(__name__)
 
 class PlaceholderRestorer:
-"""
-Advanced placeholder restoration.
-"""
+    def __init__(self):
+        self._vault = metadata_vault
+        self._pattern = re.compile(r'\[[A-Z_]+_\d+\]')
+        logger.debug("Placeholder restorer initialized")
 
-```
-def __init__(self, metadata: Optional[Dict[str, str]] = None):
-    self.metadata = metadata or {}
-    self._pattern = re.compile(r"\[[A-Z_]+_\d+\]")
+    def restore(self, text: str, metadata: Optional[Dict[str, str]] = None) -> str:
+        if not text:
+            return text
 
-def restore(self, text: str, metadata: Optional[Dict[str, str]] = None) -> str:
-    if metadata is not None:
-        self.metadata = metadata
+        placeholders = self._pattern.findall(text)
+        if not placeholders:
+            return text
 
-    restored = text
+        if metadata is not None:
+            mapping = metadata
+        else:
+            mapping = self._vault.get_all()
 
-    for placeholder in sorted(self.metadata.keys(), key=len, reverse=True):
-        restored = restored.replace(
-            placeholder,
-            self.metadata[placeholder]
-        )
+        if not mapping:
+            logger.warning("No metadata available for restoration")
+            return text
 
-    return restored
+        restored = text
+        for placeholder in sorted(mapping.keys(), key=len, reverse=True):
+            if placeholder in restored:
+                restored = restored.replace(placeholder, mapping[placeholder])
 
-def reset(self):
-    self.metadata.clear()
+        return restored
 
-def get_remaining_placeholders(self, text: str) -> List[str]:
-    return self._pattern.findall(text)
+    def restore_partial(
+        self,
+        text: str,
+        entity_type: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> str:
+        if not text:
+            return text
 
-def has_placeholders(self, text: str) -> bool:
-    return bool(self._pattern.search(text))
-```
+        if metadata is not None:
+            mapping = metadata
+        else:
+            mapping = self._vault.get_all()
+
+        if not mapping:
+            return text
+
+        if entity_type:
+            pattern = re.compile(rf'\[{entity_type}_\d+\]')
+            filtered = {k: v for k, v in mapping.items() if pattern.match(k)}
+        else:
+            filtered = mapping
+
+        if not filtered:
+            return text
+
+        restored = text
+        for placeholder in sorted(filtered.keys(), key=len, reverse=True):
+            if placeholder in restored:
+                restored = restored.replace(placeholder, filtered[placeholder])
+
+        return restored
+
+    def get_remaining_placeholders(self, text: str) -> List[str]:
+        return self._pattern.findall(text)
+
+    def count_placeholders(self, text: str) -> int:
+        return len(self._pattern.findall(text))
+
+    def has_placeholders(self, text: str) -> bool:
+        return bool(self._pattern.search(text))
+
+    def restore_custom(
+        self,
+        text: str,
+        placeholder_mapping: Dict[str, str],
+        preserve_unknown: bool = True,
+    ) -> str:
+        if not text or not placeholder_mapping:
+            return text
+
+        restored = text
+        for placeholder, value in sorted(placeholder_mapping.items(), key=lambda x: len(x[0]), reverse=True):
+            if placeholder in restored:
+                restored = restored.replace(placeholder, value)
+
+        if not preserve_unknown:
+            restored = self._pattern.sub("", restored)
+
+        return restored
+
+    def peek(self, text: str) -> Dict[str, str]:
+        placeholders = self._pattern.findall(text)
+        mapping = self._vault.get_all()
+
+        result = {}
+        for ph in placeholders:
+            if ph in mapping:
+                result[ph] = mapping[ph]
+            else:
+                result[ph] = None
+
+        return result
