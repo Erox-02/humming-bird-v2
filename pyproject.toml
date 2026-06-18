@@ -8,10 +8,10 @@ version = "2.0.0"
 description = "Contextual privacy firewall using ML for intelligent PII masking"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
 
 authors = [
-{name = "Dipanjan Dutta", email = "[relic.of.sky@gmail.com]"}
+    { name = "Dipanjan Dutta", email = "relic.of.sky@gmail.com" }
 ]
 
 classifiers = [
