@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hbp100"
+version = "2.0.0"
+description = "Contextual privacy firewall using ML for intelligent PII masking"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+
+authors = [
+{name = "Dipanjan Dutta", email = "[relic.of.sky@gmail.com](mailto:relic.of.sky@gmail.com)"}
+]
+
+classifiers = [
+"Development Status :: 4 - Beta",
+"Intended Audience :: Developers",
+"Intended Audience :: Healthcare Industry",
+"License :: OSI Approved :: MIT License",
+"Operating System :: OS Independent",
+"Programming Language :: Python :: 3",
+"Programming Language :: Python :: 3.9",
+"Programming Language :: Python :: 3.10",
+"Programming Language :: Python :: 3.11",
+"Programming Language :: Python :: 3.12",
+"Topic :: Security",
+"Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+dependencies = [
+"joblib>=1.3.0",
+"scikit-learn>=1.3.0",
+"numpy>=1.24.0"
+]
+
+[project.urls]
+Repository = "https://github.com/Erox-02/humming-bird-v2"
+
+[project.optional-dependencies]
+dev = [
+"pytest>=7.0",
+"pytest-cov>=4.0",
+"black>=23.0",
+"mypy>=1.0",
+"ruff>=0.1.0",
+"build>=1.0",
+"twine>=4.0"
+]
+
+docs = [
+"sphinx>=7.0",
+"sphinx-rtd-theme>=1.0"
+]
+
+llm = [
+"openai>=1.3.0"
+]
+
+fastapi = [
+"fastapi>=0.104.0",
+"uvicorn>=0.24.0"
+]
+
+[tool.setuptools.packages.find]
+include = ["hbp100*"]
+exclude = ["tests*", "examples*", "benchmarks*"]
+
+[tool.setuptools.package-data]
+hbp100 = [
+"assets/*.pkl"
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "D"]
+ignore = ["D100", "D104", "D107"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=hbp100 --cov-report=html --cov-report=term"
