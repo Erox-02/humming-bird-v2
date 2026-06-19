@@ -1,7 +1,7 @@
 import re
 from typing import Dict, Optional, List
 
-from hbp100.placeholders.metadata_vault import metadata_vault
+from hbp100.core.metadata import metadata_vault
 from hbp100.utils.logger import get_logger
 
 logger = get_logger(__name__)
