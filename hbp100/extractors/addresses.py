@@ -9,11 +9,15 @@ class AddressExtractor(BaseExtractor):
     def _compile_patterns(self):
         self._patterns = [
             re.compile(
-                r'\b(?:Address|Mailing Address|Home Address)[:\s]+([^.\n]{10,100}?)(?=[.,]?\s+(?:Policy|SSN|Phone|Email|MRN|[A-Z]{2,}\d)|\.|\n|$)',
+                r'\b(?:Address|Mailing Address|Home Address)[:\s]+([^.\n]{10,100}?)(?=\s+(?:and|phone|email|policy|ssn|mrn|passport|[A-Z]{2,}\d)|\.|\n|$)',
                 re.IGNORECASE
             ),
             re.compile(
-                r'\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)(?=\s+[A-Z]{2,}\d|\n|\.\s|\.$)',
+                r'\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)(?=\s+(?:and|phone|email|policy|ssn|mrn|passport|[A-Z]{2,}\d)|\n|\.\s|\.$)',
+                re.IGNORECASE
+            ),
+            re.compile(
+                r'\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)\b',
                 re.IGNORECASE
             ),
         ]
