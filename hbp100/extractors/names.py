@@ -30,35 +30,53 @@ class NameExtractor(BaseExtractor):
 
     def _compile_patterns(self):
         self._patient_patterns = [
+            # Labeled patterns
             re.compile(r'\b(?:Patient Name|Patient\'s Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
             re.compile(r'\b(?:Patient Name|Patient\'s Name|Full Name)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
-            re.compile(r'\b(?:patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', re.IGNORECASE),
-            re.compile(r'\b(?:patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b', re.IGNORECASE),
-            re.compile(r'\b(?:Name)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
-            re.compile(r'\b(?:Name)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
-            re.compile(r'\b(?:Contact patient|patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', re.IGNORECASE),
-            re.compile(r'\b(?:Contact patient|patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b', re.IGNORECASE),
-            re.compile(r'\b(?:discharge note for patient|patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', re.IGNORECASE),
-            re.compile(r'\b(?:discharge note for patient|patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b', re.IGNORECASE),
+            
+            # Simple patient name pattern - catches "patient Sarah Johnson" anywhere
+            re.compile(r'\bpatient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\bpatient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            
+            # Contact patient pattern
+            re.compile(r'\bContact\s+patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\bContact\s+patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            
+            # Name label pattern
+            re.compile(r'\bName[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\bName[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            
+            # Discharge note pattern
+            re.compile(r'\bdischarge note for patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\bdischarge note for patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
 
         self._physician_patterns = [
+            # Attending/Referring/Consulting Physician
             re.compile(r'\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
             re.compile(r'\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            
+            # Resident, PCP, Primary Care Physician
             re.compile(r'\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
             re.compile(r'\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
-            re.compile(r'\b(?:Consultant)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
-            re.compile(r'\b(?:Consultant)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            
+            # Consultant
+            re.compile(r'\bConsultant[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\bConsultant[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            
+            # Physician/Doctor label
             re.compile(r'\b(?:Physician|Doctor)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
             re.compile(r'\b(?:Physician|Doctor)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
 
         self._title_patterns = [
+            # Dr., Mr., Mrs., Ms. with optional period
             re.compile(r'\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
             re.compile(r'\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
 
         self._called_patterns = [
+            # called/named patterns
             re.compile(r'\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
             re.compile(r'\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
@@ -73,6 +91,7 @@ class NameExtractor(BaseExtractor):
         entities = []
         detected_values: Set[str] = set()
 
+        # Extract patient names
         patient_entities = self._extract_group_matches(
             text, self._patient_patterns, EntityType.NAME, group=1, confidence=0.80
         )
@@ -82,6 +101,7 @@ class NameExtractor(BaseExtractor):
                     entities.append(entity)
                     detected_values.add(entity.value)
 
+        # Extract physician names
         physician_entities = self._extract_group_matches(
             text, self._physician_patterns, EntityType.PHYSICIAN, group=1, confidence=0.85
         )
@@ -91,6 +111,7 @@ class NameExtractor(BaseExtractor):
                     entities.append(entity)
                     detected_values.add(entity.value)
 
+        # Extract title-based names
         title_entities = self._extract_group_matches(
             text, self._title_patterns, EntityType.NAME, group=1, confidence=0.80
         )
@@ -100,6 +121,7 @@ class NameExtractor(BaseExtractor):
                     entities.append(entity)
                     detected_values.add(entity.value)
 
+        # Extract called/named patterns
         called_entities = self._extract_group_matches(
             text, self._called_patterns, EntityType.NAME, group=1, confidence=0.75
         )
@@ -135,12 +157,11 @@ class NameExtractor(BaseExtractor):
                 return False
             if upper_part in self.MEDICAL_WORDS:
                 return False
-
-        start = max(0, entity.start - 100)
-        end = min(len(full_context), entity.end + 100)
+        start = max(0, entity.start - 200)
+        end = min(len(full_context), entity.end + 200)
         window = full_context[start:end].lower()
 
         if not any(kw in window for kw in keywords):
             return False
 
-        return 1 <= len(parts) <= 3
+        return 1 <= len(parts) <= 4 
