@@ -30,37 +30,37 @@ class NameExtractor(BaseExtractor):
 
     def _compile_patterns(self):
         self._patient_patterns = [
-            re.compile(r'\b(?:Patient Name|Patient\'s Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Patient Name|Patient\'s Name|Full Name)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
-            re.compile(r'\b(?:patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b'),
-            re.compile(r'\b(?:patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b'),
-            re.compile(r'\b(?:Name)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Name)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
-            re.compile(r'\b(?:Contact patient|patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b'),
-            re.compile(r'\b(?:Contact patient|patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b'),
-            re.compile(r'\b(?:discharge note for patient|patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b'),
-            re.compile(r'\b(?:discharge note for patient|patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b'),
+            re.compile(r'\b(?:Patient Name|Patient\'s Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Patient Name|Patient\'s Name|Full Name)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', re.IGNORECASE),
+            re.compile(r'\b(?:patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b', re.IGNORECASE),
+            re.compile(r'\b(?:Name)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Name)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Contact patient|patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', re.IGNORECASE),
+            re.compile(r'\b(?:Contact patient|patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b', re.IGNORECASE),
+            re.compile(r'\b(?:discharge note for patient|patient)\s+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', re.IGNORECASE),
+            re.compile(r'\b(?:discharge note for patient|patient)\s+([A-Z]+\s+[A-Z]+(?:\s+[A-Z]+)?)\b', re.IGNORECASE),
         ]
 
         self._physician_patterns = [
-            re.compile(r'\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
-            re.compile(r'\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
-            re.compile(r'\b(?:Consultant)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Consultant)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
-            re.compile(r'\b(?:Physician|Doctor)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Physician|Doctor)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
+            re.compile(r'\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Consultant)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Consultant)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Physician|Doctor)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Physician|Doctor)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
 
         self._title_patterns = [
-            re.compile(r'\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
+            re.compile(r'\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
 
         self._called_patterns = [
-            re.compile(r'\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b'),
-            re.compile(r'\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b'),
+            re.compile(r'\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b', re.IGNORECASE),
+            re.compile(r'\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b', re.IGNORECASE),
         ]
 
     @property
