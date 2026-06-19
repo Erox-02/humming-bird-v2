@@ -1,93 +1,91 @@
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
-from enum import Enum
+import re
+from typing import List, Dict
+
+from hbp100.extractors.base import BaseExtractor
+from hbp100.schemas.entity import Entity, EntityType
 
 
-class EntityType(str, Enum):
-    """Types of entities that can be extracted."""
+class IDExtractor(BaseExtractor):
+    ID_CONFIGS: Dict[EntityType, Dict] = {
+        EntityType.MRN: {
+            'labels': [r'\b(?:MRN|Medical Record Number)[:\s]+'],
+            'min_length': 4,
+            'pattern': r'([A-Z0-9]{4,20})\b',
+            'confidence': 0.90,
+        },
+        EntityType.PATIENT_ID: {
+            'labels': [r'\b(?:Patient ID|PID|Patient Identifier)[:\s]+'],
+            'min_length': 4,
+            'pattern': r'([A-Z0-9][-]?[A-Z0-9]{3,20})\b',
+            'confidence': 0.90,
+        },
+        EntityType.CASE_ID: {
+            'labels': [r'\b(?:Case Number|Case No|Case ID)[:\s]+'],
+            'min_length': 4,
+            'pattern': r'([A-Z0-9][-]?[A-Z0-9]{3,20})\b',
+            'confidence': 0.90,
+        },
+        EntityType.POLICY_NUMBER: {
+            'labels': [r'\b(?:Policy Number|Policy No|Policy ID|Insurance Policy)[:\s]+'],
+            'min_length': 5,
+            'pattern': r'([A-Z0-9][-]?[A-Z0-9]{4,20})\b',
+            'confidence': 0.90,
+        },
+        EntityType.SSN: {
+            'labels': [r'\b(?:SSN|Social Security Number)[:\s]+'],
+            'min_length': 9,
+            'pattern': r'(\d{3}-\d{2}-\d{4})\b',
+            'confidence': 0.95,
+        },
+        EntityType.PASSPORT: {
+            'labels': [r'\b(?:Passport|Passport Number|Passport No)[:\s]+'],
+            'min_length': 6,
+            'pattern': r'([A-Z0-9]{6,12})\b',
+            'confidence': 0.90,
+        },
+    }
 
-    # Personal Information
-    NAME = "NAME"
-    PHYSICIAN = "PHYSICIAN"
-    PATIENT_ID = "PATIENT_ID"
-
-    # Contact
-    EMAIL = "EMAIL"
-    PHONE = "PHONE"
-    ADDRESS = "ADDRESS"
-
-    # Medical Identifiers
-    MRN = "MRN"
-    CASE_ID = "CASE_ID"
-    POLICY_NUMBER = "POLICY_NUMBER"
-
-    # Dates
-    DATE = "DATE"
-    DOB = "DOB"
-
-    # Other
-    SSN = "SSN"
-    HOSPITAL = "HOSPITAL"
-
-
-@dataclass
-class Entity:
-    """
-    Represents an extracted entity with all metadata.
-
-    Attributes:
-        type: Entity type (NAME, PHONE, EMAIL, etc.)
-        value: The actual text value
-        start: Character start position (for precise replacement)
-        end: Character end position (for precise replacement)
-        confidence: Extraction confidence (0.0-1.0)
-        placeholder: Generated placeholder (set later)
-        metadata: Additional entity-specific metadata
-    """
-
-    type: EntityType
-    value: str
-    start: int
-    end: int
-    confidence: float = 1.0
-    placeholder: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """Ensure end > start and valid confidence."""
-        if self.end <= self.start:
-            raise ValueError("End position must be greater than start")
-        if not 0.0 <= self.confidence <= 1.0:
-            raise ValueError("Confidence must be between 0.0 and 1.0")
+    def _compile_patterns(self):
+        self._patterns = {}
+        for entity_type, config in self.ID_CONFIGS.items():
+            self._patterns[entity_type] = []
+            for label in config['labels']:
+                full_pattern = label + config['pattern']
+                self._patterns[entity_type].append(re.compile(full_pattern, re.IGNORECASE))
 
     @property
-    def text(self) -> str:
-        """Alias for value."""
-        return self.value
+    def supported_types(self) -> List[EntityType]:
+        return list(self.ID_CONFIGS.keys())
 
-    @property
-    def length(self) -> int:
-        """Length of the entity value."""
-        return len(self.value)
+    def extract(self, text: str) -> List[Entity]:
+        self._validate_text(text)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization."""
-        return {
-            "type": self.type.value,
-            "value": self.value,
-            "start": self.start,
-            "end": self.end,
-            "confidence": self.confidence,
-            "placeholder": self.placeholder,
-            "metadata": self.metadata,
-        }
+        entities = []
+        detected_values = set()
 
-    def __hash__(self) -> int:
-        """Hash based on value and type."""
-        return hash((self.type, self.value))
+        for entity_type, patterns in self._patterns.items():
+            config = self.ID_CONFIGS[entity_type]
+            for pattern in patterns:
+                for match in pattern.finditer(text):
+                    try:
+                        value = match.group(1)
+                    except IndexError:
+                        continue
 
-    def __eq__(self, other: object) -> bool:
-        """Equality based on value and type."""
-        if not isinstance(other, Entity):
-            return False
-        return self.type == other.type and self.value == other.value
+                    if value in detected_values:
+                        continue
+
+                    cleaned = re.sub(r'[^A-Z0-9]', '', value.upper())
+                    if len(cleaned) >= config['min_length']:
+                        start, end = match.span(1)
+                        entity = Entity(
+                            type=entity_type,
+                            value=value,
+                            start=start,
+                            end=end,
+                            confidence=config['confidence'],
+                        )
+                        entities.append(entity)
+                        detected_values.add(value)
+
+        return entities
