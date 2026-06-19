@@ -9,7 +9,7 @@ class PhoneExtractor(BaseExtractor):
     def _compile_patterns(self):
         self._patterns = [
             re.compile(r'\b\+\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b'),
-            re.compile(r'\b\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'),
+            re.compile(r'(?<!\w)\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'),
             re.compile(r'\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b'),
             re.compile(r'\b\d{10}\b'),
         ]
