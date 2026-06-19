@@ -20,16 +20,18 @@ class PrivacyPredictor:
         model_path: Optional[str] = None,
         vectorizer_path: Optional[str] = None,
         context_builder: Optional[ContextBuilder] = None,
+        threshold: float = 0.5,
     ):
         self.model_path = model_path
         self.vectorizer_path = vectorizer_path
         self.context_builder = context_builder or ContextBuilder()
+        self.threshold = threshold
 
         self._model = None
         self._vectorizer = None
         self._loaded = False
 
-        logger.info("Privacy predictor initialized")
+        logger.info(f"Privacy predictor initialized with threshold {self.threshold}")
 
     def load_assets(self) -> bool:
         """Load model and vectorizer lazily."""
@@ -76,16 +78,15 @@ class PrivacyPredictor:
         try:
             X = self._vectorizer.transform([context_string])
 
-            pred = self._model.predict(X)[0]
             probs = self._model.predict_proba(X)[0]
+            mask_probability = probs[1]
+            confidence = float(mask_probability)
 
             decision = (
                 DecisionType.MASK
-                if pred == 1
+                if mask_probability >= self.threshold
                 else DecisionType.KEEP
             )
-
-            confidence = float(max(probs))
 
             return decision, confidence
 
@@ -106,17 +107,16 @@ class PrivacyPredictor:
         try:
             X = self._vectorizer.transform(context_strings)
 
-            preds = self._model.predict(X)
             probs = self._model.predict_proba(X)
 
             decisions = [
-                DecisionType.MASK if p == 1 else DecisionType.KEEP
-                for p in preds
+                DecisionType.MASK if p[1] >= self.threshold else DecisionType.KEEP
+                for p in probs
             ]
 
             confidences = [
-                float(max(prob))
-                for prob in probs
+                float(p[1])
+                for p in probs
             ]
 
             return decisions, confidences
@@ -192,3 +192,10 @@ class PrivacyPredictor:
     def reload(self):
         self._loaded = False
         self.load_assets()
+
+    def set_threshold(self, threshold: float):
+        """Change the decision threshold at runtime."""
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError("Threshold must be between 0.0 and 1.0")
+        self.threshold = threshold
+        logger.info(f"Threshold updated to {threshold}")
