@@ -9,72 +9,27 @@ logger = get_logger(__name__)
 
 
 class BaseExtractor(ABC):
-    """
-    Base class for all entity extractors.
-
-    Provides common functionality and interface for entity extraction.
-    """
-
     def __init__(self):
-        """Initialize the extractor with compiled patterns."""
         self._patterns: List[Pattern] = []
         self._compile_patterns()
 
     @abstractmethod
     def _compile_patterns(self):
-        """
-        Compile regex patterns for extraction.
-
-        Subclasses must implement this method to define their patterns.
-        """
         pass
 
     @abstractmethod
     def extract(self, text: str) -> List[Entity]:
-        """
-        Extract entities from text.
-
-        Args:
-            text: Input text to analyze
-
-        Returns:
-            List of Entity objects
-        """
         pass
 
     @property
     @abstractmethod
     def supported_types(self) -> List[EntityType]:
-        """
-        List of entity types this extractor supports.
-
-        Returns:
-            List of EntityType enums
-        """
         pass
 
     def supports(self, entity_type: EntityType) -> bool:
-        """
-        Check if this extractor supports a given entity type.
-
-        Args:
-            entity_type: Entity type to check
-
-        Returns:
-            True if supported, False otherwise
-        """
         return entity_type in self.supported_types
 
     def _validate_text(self, text: str) -> None:
-        """
-        Validate input text.
-
-        Args:
-            text: Input text to validate
-
-        Raises:
-            ValueError: If text is empty
-        """
         if not text or not text.strip():
             raise ValueError("Input text cannot be empty")
 
@@ -85,18 +40,6 @@ class BaseExtractor(ABC):
         entity_type: EntityType,
         confidence: float = 0.85,
     ) -> List[Entity]:
-        """
-        Extract entities using compiled patterns.
-
-        Args:
-            text: Input text
-            patterns: List of compiled regex patterns
-            entity_type: Entity type to assign
-            confidence: Extraction confidence
-
-        Returns:
-            List of Entity objects
-        """
         entities = []
         detected_values: Set[str] = set()
 
@@ -128,20 +71,6 @@ class BaseExtractor(ABC):
         confidence: float = 0.85,
         min_length: int = 2,
     ) -> List[Entity]:
-        """
-        Extract entities using regex groups.
-
-        Args:
-            text: Input text
-            patterns: List of compiled regex patterns with capture groups
-            entity_type: Entity type to assign
-            group: Group index to extract (default: 1)
-            confidence: Extraction confidence
-            min_length: Minimum length of extracted value
-
-        Returns:
-            List of Entity objects
-        """
         entities = []
         detected_values: Set[str] = set()
 
@@ -169,42 +98,14 @@ class BaseExtractor(ABC):
         return entities
 
     def _is_valid_name_format(self, value: str) -> bool:
-        """
-        Validate if a value follows name format.
-
-        Args:
-            value: Value to validate
-
-        Returns:
-            True if valid name format, False otherwise
-        """
         return bool(
             re.match(r'^[A-Z][a-z]*(?:\s+[A-Z][a-z]*)*$', value) or
             re.match(r'^[A-Z]+(?:\s+[A-Z]+)*$', value)
         )
 
     def _is_all_caps(self, value: str) -> bool:
-        """
-        Check if a value is in all caps.
-
-        Args:
-            value: Value to check
-
-        Returns:
-            True if all caps, False otherwise
-        """
         return bool(re.match(r'^[A-Z]+(?:\s+[A-Z]+)*$', value))
 
     def _has_context_keyword(self, text: str, keywords: set) -> bool:
-        """
-        Check if text contains any of the given keywords.
-
-        Args:
-            text: Text to search
-            keywords: Set of keywords to look for
-
-        Returns:
-            True if any keyword is found, False otherwise
-        """
         text_lower = text.lower()
         return any(kw.lower() in text_lower for kw in keywords)
