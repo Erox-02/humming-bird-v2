@@ -52,7 +52,7 @@ class ExtractorManager:
             except Exception as e:
                 logger.error(f"Extractor {extractor.__class__.__name__} failed: {e}")
 
-        all_entities.sort(key=lambda e: (-(e.end - e.start), e.start))
+        all_entities.sort(key=lambda e: (e.start, -(e.end - e.start)))
 
         filtered = []
         for entity in all_entities:
@@ -64,7 +64,6 @@ class ExtractorManager:
             if not overlap:
                 filtered.append(entity)
 
-        filtered.sort(key=lambda e: e.start)
         return filtered
 
     def extract_by_type(self, text: str, entity_type: EntityType) -> List[Entity]:
