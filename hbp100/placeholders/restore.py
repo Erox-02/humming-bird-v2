@@ -1,18 +1,24 @@
 import re
 from typing import Dict, Optional, List
+
 from hbp100.placeholders.metadata_vault import metadata_vault
 from hbp100.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 class PlaceholderRestorer:
     def __init__(self):
         self._vault = metadata_vault
-        self._pattern = re.compile(r'\[[A-Z_]+_\d+\]')
-        self.metadata = {}
+        self._pattern = re.compile(r"\[[A-Z_]+_\d+\]")
+        self.metadata: Dict[str, str] = {}
         logger.debug("Placeholder restorer initialized")
 
-    def restore(self, text: str, metadata: Optional[Dict[str, str]] = None) -> str:
+    def restore(
+        self,
+        text: str,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> str:
         if not text:
             return text
 
@@ -22,6 +28,8 @@ class PlaceholderRestorer:
 
         if metadata is not None:
             mapping = metadata
+        elif self.metadata:
+            mapping = self.metadata
         else:
             mapping = self._vault.get_all()
 
@@ -30,9 +38,13 @@ class PlaceholderRestorer:
             return text
 
         restored = text
+
         for placeholder in sorted(mapping.keys(), key=len, reverse=True):
             if placeholder in restored:
-                restored = restored.replace(placeholder, mapping[placeholder])
+                restored = restored.replace(
+                    placeholder,
+                    mapping[placeholder]
+                )
 
         return restored
 
@@ -47,6 +59,8 @@ class PlaceholderRestorer:
 
         if metadata is not None:
             mapping = metadata
+        elif self.metadata:
+            mapping = self.metadata
         else:
             mapping = self._vault.get_all()
 
@@ -54,8 +68,12 @@ class PlaceholderRestorer:
             return text
 
         if entity_type:
-            pattern = re.compile(rf'\[{entity_type}_\d+\]')
-            filtered = {k: v for k, v in mapping.items() if pattern.match(k)}
+            pattern = re.compile(rf"\[{entity_type}_\d+\]")
+            filtered = {
+                k: v
+                for k, v in mapping.items()
+                if pattern.match(k)
+            }
         else:
             filtered = mapping
 
@@ -63,9 +81,13 @@ class PlaceholderRestorer:
             return text
 
         restored = text
+
         for placeholder in sorted(filtered.keys(), key=len, reverse=True):
             if placeholder in restored:
-                restored = restored.replace(placeholder, filtered[placeholder])
+                restored = restored.replace(
+                    placeholder,
+                    filtered[placeholder]
+                )
 
         return restored
 
@@ -88,33 +110,48 @@ class PlaceholderRestorer:
             return text
 
         restored = text
-        for placeholder, value in sorted(placeholder_mapping.items(), key=lambda x: len(x[0]), reverse=True):
+
+        for placeholder, value in sorted(
+            placeholder_mapping.items(),
+            key=lambda x: len(x[0]),
+            reverse=True,
+        ):
             if placeholder in restored:
-                restored = restored.replace(placeholder, value)
+                restored = restored.replace(
+                    placeholder,
+                    value,
+                )
 
         if not preserve_unknown:
             restored = self._pattern.sub("", restored)
 
         return restored
 
-    def peek(self, text: str) -> Dict[str, str]:
+    def peek(self, text: str) -> Dict[str, Optional[str]]:
         placeholders = self._pattern.findall(text)
-        mapping = self._vault.get_all()
+
+        if self.metadata:
+            mapping = self.metadata
+        else:
+            mapping = self._vault.get_all()
 
         result = {}
+
         for ph in placeholders:
-            if ph in mapping:
-                result[ph] = mapping[ph]
-            else:
-                result[ph] = None
+            result[ph] = mapping.get(ph)
 
         return result
 
-    def update_metadata(self, metadata: dict):
+    def update_metadata(self, metadata: Dict[str, str]):
         """
-        Update metadata mappings.
+        Replace metadata for the current request.
         """
-        if hasattr(self, "metadata"):
-            self.metadata.update(metadata)
-        else:
-            self.metadata = dict(metadata)
+        self.metadata.clear()
+        self.metadata.update(metadata)
+
+    def reset(self):
+        """
+        Reset internal metadata.
+        """
+        self.metadata.clear()
+        logger.debug("Placeholder restorer reset")
