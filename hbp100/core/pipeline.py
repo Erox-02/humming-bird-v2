@@ -68,6 +68,10 @@ class PrivacyPipeline:
         if not text or not text.strip():
             raise ValueError("Input text cannot be empty")
 
+        self.generator.reset_all()
+        self.validator.reset()
+        self.restorer.reset()
+
         logger.info(f"Processing text (length: {len(text)} chars)")
 
         entities = self._extract_entities(text)
@@ -141,7 +145,6 @@ class PrivacyPipeline:
         sorted_entities = sorted(entities, key=lambda e: e.start, reverse=True)
 
         masked = text
-        self.generator.reset()
 
         for entity in sorted_entities:
             decision = decision_map.get(entity)
@@ -165,7 +168,7 @@ class PrivacyPipeline:
         return self.validator.validate(response, metadata)
 
     def reset(self):
-        self.generator.reset()
+        self.generator.reset_all()
         self.validator.reset()
         self.restorer.reset()
         logger.info("Pipeline reset")
