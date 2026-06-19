@@ -178,7 +178,7 @@ class IDExtractor(BaseExtractor):
                         entities.append(entity)
                         detected_values.add(value)
 
-        return entitiesimport re
+        return entitiesimport 
 from typing import List, Dict
 
 from hbp100.extractors.base import BaseExtractor
