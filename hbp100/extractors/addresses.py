@@ -6,35 +6,23 @@ from hbp100.schemas.entity import Entity, EntityType
 
 
 class AddressExtractor(BaseExtractor):
-    """
-    Extracts addresses from labeled sections.
-
-    Supports:
-    - Address: 123 Main St, Boston, MA 02115
-    - Mailing Address: 456 Oak Ave, New York, NY 10001
-    - 123 Main St, Boston, MA 02115 (direct detection)
-    """
-
     def _compile_patterns(self):
-        """Compile regex patterns for address extraction."""
         self._patterns = [
             re.compile(
-                r'\b(?:Address|Mailing Address|Home Address)[:\s]+([A-Za-z0-9\s,.#-]{10,100})\b',
+                r'\b(?:Address|Mailing Address|Home Address)[:\s]+([^.\n]{10,100}?)(?=[.,]?\s+(?:Policy|SSN|Phone|Email|MRN|[A-Z]{2,}\d)|\.|\n|$)',
                 re.IGNORECASE
             ),
             re.compile(
-                r'\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)\b',
+                r'\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)(?=\s+[A-Z]{2,}\d|\n|\.\s|\.$)',
                 re.IGNORECASE
             ),
         ]
 
     @property
     def supported_types(self) -> List[EntityType]:
-        """List of entity types this extractor supports."""
         return [EntityType.ADDRESS]
 
     def extract(self, text: str) -> List[Entity]:
-        """Extract address entities from text."""
         self._validate_text(text)
 
         entities = []
@@ -49,6 +37,8 @@ class AddressExtractor(BaseExtractor):
 
                 if value in detected_values or len(value) < 10:
                     continue
+
+                value = re.sub(r'[.,]\s*$', '', value)
 
                 start, end = match.span(1)
                 entity = Entity(
