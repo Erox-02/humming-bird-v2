@@ -1,8 +1,8 @@
-use crate::core::{Pipeline, PipelineResult, MetadataVault};
-use crate::schemas::{Entity, ProcessResult};
-use crate::utils::logger;
+use crate::core::{Pipeline, MetadataVault};
+use crate::schemas::ProcessResult;
 use std::collections::HashMap;
 use log;
+pub type EngineResult = ProcessResult;
 
 #[cfg(feature = "python-bridge")]
 use crate::python_bridge::MLPredictor;

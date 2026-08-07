@@ -2,10 +2,9 @@
 name = "humming-bird"
 version = "3.0.0"
 edition = "2021"
-authors = ["Dipanjan Dutta <relic.of.sky@gmail.com>"]
-description = "hbp100: privacy preserving firewall for llm's"
+authors = ["Dipanjan Dutta <relic.of.sky@.com>"]
+description = "HBP100: privacy preserving firewall for llm"
 license = "MIT"
-repository = "https://github.com/Erox-02/humming-bird-v3"
 
 [lib]
 name = "hbp100"
@@ -22,8 +21,9 @@ log = "0.4"
 env_logger = "0.10"
 lazy_static = "1.4"
 cached = "0.46"
+chrono = "0.4"  
 
-pyo3 = { version = "0.20", features = ["extension-module", "abi3-py37"] }
+pyo3 = { version = "0.20", features = ["extension-module", "abi3-py37"], optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.0"

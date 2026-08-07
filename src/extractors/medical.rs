@@ -1,4 +1,5 @@
 use crate::extractors::base::BaseExtractor;
+use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
 use std::collections::HashSet;
@@ -23,22 +24,7 @@ impl Default for HospitalExtractor {
     }
 }
 
-impl BaseExtractor for HospitalExtractor {
-    fn compile_patterns(&mut self) {
-        self.patterns = vec![
-            Regex::new(
-                r"(?i)\b(?:Hospital|Medical Center|Clinic)[:\s]+([A-Z][a-zA-Z\s]+?)(?=\s+[A-Z]|$|[,.]|\n)"
-            ).unwrap(),
-            Regex::new(
-                r"(?i)\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\s+(?:Hospital|Medical Center|Clinic))\b"
-            ).unwrap(),
-        ];
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::Hospital]
-    }
-    
+impl EntityExtractor for HospitalExtractor {
     fn extract(&self, text: &str) -> Vec<Entity> {
         if let Err(e) = self.validate_text(text) {
             log::warn!("Validation failed: {}", e);
@@ -92,5 +78,22 @@ impl BaseExtractor for HospitalExtractor {
         }
         
         entities
+    }
+    
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::Hospital]
+    }
+}
+
+impl BaseExtractor for HospitalExtractor {
+    fn compile_patterns(&mut self) {
+        self.patterns = vec![
+            Regex::new(
+                r"(?i)\b(?:Hospital|Medical Center|Clinic)[:\s]+([A-Z][a-zA-Z\s]+?)(?=\s+[A-Z]|$|[,.]|\n)"
+            ).unwrap(),
+            Regex::new(
+                r"(?i)\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\s+(?:Hospital|Medical Center|Clinic))\b"
+            ).unwrap(),
+        ];
     }
 }

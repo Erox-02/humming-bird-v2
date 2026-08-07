@@ -48,14 +48,11 @@ impl ExtractorManager {
         let mut detected_values = std::collections::HashSet::new();
         
         for extractor in &self.extractors {
-            match extractor.extract(text) {
-                entities => {
-                    for entity in entities {
-                        if !detected_values.contains(&entity.value) {
-                            all_entities.push(entity.clone());
-                            detected_values.insert(entity.value);
-                        }
-                    }
+            let entities = extractor.extract(text);
+            for entity in entities {
+                if !detected_values.contains(&entity.value) {
+                    all_entities.push(entity.clone());
+                    detected_values.insert(entity.value);
                 }
             }
         }

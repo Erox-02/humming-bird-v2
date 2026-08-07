@@ -1,4 +1,4 @@
-use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
+use log::{LevelFilter, Metadata, Record, SetLoggerError};
 use std::sync::Once;
 
 static INIT: Once = Once::new();

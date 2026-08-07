@@ -1,4 +1,5 @@
 use crate::extractors::base::BaseExtractor;
+use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
@@ -101,28 +102,7 @@ impl Default for IDExtractor {
         Self::new()
     }
 }
-
-impl BaseExtractor for IDExtractor {
-    fn compile_patterns(&mut self) {
-        self.configs = Self::get_configs();
-        self.patterns.clear();
-        
-        for (entity_type, config) in &self.configs {
-            let mut patterns = Vec::new();
-            for label in &config.labels {
-                let full_pattern = format!("{}{}", label, config.pattern);
-                if let Ok(re) = Regex::new(&full_pattern) {
-                    patterns.push(re);
-                }
-            }
-            self.patterns.insert(*entity_type, patterns);
-        }
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        self.configs.keys().cloned().collect()
-    }
-    
+impl EntityExtractor for IDExtractor {
     fn extract(&self, text: &str) -> Vec<Entity> {
         if let Err(e) = self.validate_text(text) {
             log::warn!("Validation failed: {}", e);
@@ -163,5 +143,27 @@ impl BaseExtractor for IDExtractor {
         }
         
         entities
+    }
+    
+    fn supported_types(&self) -> Vec<EntityType> {
+        self.configs.keys().cloned().collect()
+    }
+}
+
+impl BaseExtractor for IDExtractor {
+    fn compile_patterns(&mut self) {
+        self.configs = Self::get_configs();
+        self.patterns.clear();
+        
+        for (entity_type, config) in &self.configs {
+            let mut patterns = Vec::new();
+            for label in &config.labels {
+                let full_pattern = format!("{}{}", label, config.pattern);
+                if let Ok(re) = Regex::new(&full_pattern) {
+                    patterns.push(re);
+                }
+            }
+            self.patterns.insert(*entity_type, patterns);
+        }
     }
 }

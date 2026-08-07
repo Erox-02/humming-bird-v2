@@ -1,4 +1,5 @@
 use crate::extractors::base::BaseExtractor;
+use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
 
@@ -22,6 +23,21 @@ impl Default for DateExtractor {
     }
 }
 
+impl EntityExtractor for DateExtractor {
+    fn extract(&self, text: &str) -> Vec<Entity> {
+        if let Err(e) = self.validate_text(text) {
+            log::warn!("Validation failed: {}", e);
+            return Vec::new();
+        }
+        
+        self.extract_matches(text, &self.patterns, EntityType::Date, 0.90)
+    }
+    
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::Date]
+    }
+}
+
 impl BaseExtractor for DateExtractor {
     fn compile_patterns(&mut self) {
         self.patterns = vec![
@@ -32,18 +48,5 @@ impl BaseExtractor for DateExtractor {
             Regex::new(r"\b[A-Z][a-z]+ \d{4}\b").unwrap(),
             Regex::new(r"\b\d{1,2}[/-]\d{1,2}\b").unwrap(),
         ];
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::Date]
-    }
-    
-    fn extract(&self, text: &str) -> Vec<Entity> {
-        if let Err(e) = self.validate_text(text) {
-            log::warn!("Validation failed: {}", e);
-            return Vec::new();
-        }
-        
-        self.extract_matches(text, &self.patterns, EntityType::Date, 0.90)
     }
 }

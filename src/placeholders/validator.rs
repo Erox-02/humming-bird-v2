@@ -60,7 +60,7 @@ impl PlaceholderValidator {
         sanitized
     }
     
-    pub fn update_allowed(&mut self, placeholders: impl IntoIterator<Item = String>) {
+    pub fn update_allowed(&mut self, placeholders: HashSet<String>) {
         for ph in placeholders {
             self.allowed.insert(ph);
         }

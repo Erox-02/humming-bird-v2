@@ -1,4 +1,5 @@
-use crate::extractors::base::BaseExtractor;
+}use crate::extractors::base::BaseExtractor;
+use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
 use std::collections::HashSet;
@@ -123,48 +124,7 @@ impl Default for NameExtractor {
     }
 }
 
-impl BaseExtractor for NameExtractor {
-    fn compile_patterns(&mut self) {
-        
-        self.patient_patterns = vec![
-            Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bpatient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bpatient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bContact\s+patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bContact\s+patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bName[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bName[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bdischarge note for patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bdischarge note for patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-        ];
-        
-        self.physician_patterns = vec![
-            Regex::new(r"(?i)\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bConsultant[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bConsultant[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Physician|Doctor)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Physician|Doctor)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-        ];
-        
-        self.title_patterns = vec![
-            Regex::new(r"(?i)\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-        ];
-        
-        self.called_patterns = vec![
-            Regex::new(r"(?i)\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-        ];
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::Name, EntityType::Physician]
-    }
-    
+impl EntityExtractor for NameExtractor {
     fn extract(&self, text: &str) -> Vec<Entity> {
         if let Err(e) = self.validate_text(text) {
             log::warn!("Validation failed: {}", e);
@@ -231,5 +191,47 @@ impl BaseExtractor for NameExtractor {
         }
         
         all_entities
+    }
+    
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::Name, EntityType::Physician]
+    }
+}
+
+impl BaseExtractor for NameExtractor {
+    fn compile_patterns(&mut self) {
+        self.patient_patterns = vec![
+            Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bpatient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bpatient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bContact\s+patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bContact\s+patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bName[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bName[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bdischarge note for patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bdischarge note for patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+        ];
+        
+        self.physician_patterns = vec![
+            Regex::new(r"(?i)\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bConsultant[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\bConsultant[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Physician|Doctor)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Physician|Doctor)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+        ];
+        
+        self.title_patterns = vec![
+            Regex::new(r"(?i)\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+        ];
+        
+        self.called_patterns = vec![
+            Regex::new(r"(?i)\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
+            Regex::new(r"(?i)\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+        ];
     }
 }

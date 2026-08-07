@@ -3,7 +3,9 @@ use crate::schemas::{Entity, EntityType};
 pub trait EntityExtractor: Send + Sync {
     fn extract(&self, text: &str) -> Vec<Entity>;
     
-    fn supports(&self, entity_type: EntityType) -> bool;
+    fn supports(&self, entity_type: EntityType) -> bool {
+        self.supported_types().contains(&entity_type)
+    }
     
     fn supported_types(&self) -> Vec<EntityType>;
     

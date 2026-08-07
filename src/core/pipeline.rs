@@ -5,12 +5,13 @@ use crate::schemas::{Entity, PrivacyDecision, ProcessResult};
 use std::collections::HashMap;
 use log;
 
+pub type PipelineResult = ProcessResult;
+
 #[cfg(feature = "python-bridge")]
 use crate::python_bridge::MLPredictor;
 
 #[cfg(not(feature = "python-bridge"))]
 pub struct MLPredictor {
-    // Fallback when Python bridge is disabled
     threshold: f32,
 }
 
@@ -21,7 +22,6 @@ impl MLPredictor {
     }
     
     pub fn predict(&self, _context: &str) -> (bool, f32) {
-        // Fallback: always mask with 0.5 confidence
         (true, 0.5)
     }
 }
@@ -70,7 +70,6 @@ impl Pipeline {
         
         log::info!("Processing text (length: {} chars)", text.len());
         
-        // Extract entities
         let entities = self.extractor_manager.extract_all(text);
         log::info!("Extracted {} entities", entities.len());
         
@@ -78,15 +77,14 @@ impl Pipeline {
             return ProcessResult::new(text, text);
         }
         
-        // Predict decisions
         let decisions = self.predict_decisions(&entities, text, intent);
         log::info!("Predicted {} decisions", decisions.len());
         
-        // Apply masking
         let (masked_text, metadata) = self.apply_masking(text, &entities, &decisions);
         log::info!("Masked {} entities", metadata.len());
         
-        self.validator.update_allowed(metadata.keys().cloned().collect());
+        let allowed: std::collections::HashSet<String> = metadata.keys().cloned().collect();
+        self.validator.update_allowed(allowed);
         self.restorer.update_metadata(metadata.clone());
         
         let has_pii = decisions.iter().any(|d| d.should_mask());
@@ -108,9 +106,19 @@ impl Pipeline {
         intent: Option<&str>,
     ) -> Vec<PrivacyDecision> {
         if let Some(predictor) = &self.predictor {
-            predictor.predict_batch(entities, original_text, intent)
+            entities.iter()
+                .map(|e| {
+                    let context = self.context_builder.build(e, original_text, intent);
+                    let (should_mask, confidence) = predictor.predict(&context);
+                    PrivacyDecision::new(
+                        e.clone(),
+                        if should_mask { crate::schemas::DecisionType::Mask } else { crate::schemas::DecisionType::Keep },
+                        confidence,
+                        context,
+                    )
+                })
+                .collect()
         } else {
-            // Fallback: mask everything
             entities.iter()
                 .map(|e| {
                     let context = self.context_builder.build(e, original_text, intent);
@@ -133,23 +141,23 @@ impl Pipeline {
     ) -> (String, HashMap<String, String>) {
         use std::collections::HashMap;
         
-        // Build decision map
         let decision_map: HashMap<&Entity, &PrivacyDecision> = decisions
             .iter()
             .map(|d| (&d.entity, d))
             .collect();
         
-        // Sort entities by start position descending for in-place replacement
         let mut sorted_entities: Vec<&Entity> = entities.iter().collect();
         sorted_entities.sort_by(|a, b| b.start.cmp(&a.start));
         
         let mut masked = text.to_string();
         let mut metadata = HashMap::new();
         
+        let mut generator = PlaceholderGenerator::new();
+        
         for entity in sorted_entities {
             if let Some(decision) = decision_map.get(&entity) {
                 if decision.should_mask() {
-                    let placeholder = self.generator.generate(entity);
+                    let placeholder = generator.generate(entity);
                     let start = entity.start;
                     let end = entity.end;
                     masked.replace_range(start..end, &placeholder);

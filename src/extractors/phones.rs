@@ -1,4 +1,5 @@
 use crate::extractors::base::BaseExtractor;
+use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
 use std::collections::HashSet;
@@ -23,20 +24,7 @@ impl Default for PhoneExtractor {
     }
 }
 
-impl BaseExtractor for PhoneExtractor {
-    fn compile_patterns(&mut self) {
-        self.patterns = vec![
-            Regex::new(r"\b\+\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b").unwrap(),
-            Regex::new(r"(?<!\w)\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b").unwrap(),
-            Regex::new(r"\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b").unwrap(),
-            Regex::new(r"\b\d{10}\b").unwrap(),
-        ];
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::Phone]
-    }
-    
+impl EntityExtractor for PhoneExtractor {
     fn extract(&self, text: &str) -> Vec<Entity> {
         if let Err(e) = self.validate_text(text) {
             log::warn!("Validation failed: {}", e);
@@ -67,5 +55,20 @@ impl BaseExtractor for PhoneExtractor {
         }
         
         entities
+    }
+    
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::Phone]
+    }
+}
+
+impl BaseExtractor for PhoneExtractor {
+    fn compile_patterns(&mut self) {
+        self.patterns = vec![
+            Regex::new(r"\b\+\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b").unwrap(),
+            Regex::new(r"(?<!\w)\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b").unwrap(),
+            Regex::new(r"\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b").unwrap(),
+            Regex::new(r"\b\d{10}\b").unwrap(),
+        ];
     }
 }
