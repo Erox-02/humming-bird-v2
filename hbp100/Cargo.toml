@@ -1,0 +1,38 @@
+[package]
+name = "humming-bird"
+version = "3.0.0"
+edition = "2021"
+authors = ["Dipanjan Dutta <relic.of.sky@gmail.com>"]
+description = "hbp100: privacy preserving firewall for llm's"
+license = "MIT"
+repository = "https://github.com/Erox-02/humming-bird-v3"
+
+[lib]
+name = "hbp100"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+regex = "1.10"
+once_cell = "1.19"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.10"
+lazy_static = "1.4"
+cached = "0.46"
+
+pyo3 = { version = "0.20", features = ["extension-module", "abi3-py37"] }
+
+[dev-dependencies]
+pretty_assertions = "1.0"
+
+[features]
+default = []
+python-bridge = ["pyo3"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
