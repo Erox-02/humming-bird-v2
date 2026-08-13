@@ -28,6 +28,11 @@ impl HbpModel {
         self.booster.save_file(path)?;
         Ok(())
     }
+    pub fn load(path:&str)->Result<Self>{
+        let booster=Booster::from_file(path)?;
+
+        Ok(Self{booster})
+    }
     pub fn predict(&self,features:&[f64])->Result<f64>{
         let predictions=self.booster.predict_with_params(
             features,
