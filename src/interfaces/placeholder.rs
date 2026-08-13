@@ -1,4 +1,4 @@
-use crate::schemas::{Entity, Placeholder};
+use crate::schemas::Entity;
 use std::collections::HashMap;
 
 pub trait PlaceholderEngine: Send + Sync {

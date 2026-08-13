@@ -1,4 +1,4 @@
-use crate::core::{Engine, EngineResult};
+use crate::core::Engine;
 use crate::schemas::ProcessResult;
 use std::collections::HashMap;
 
