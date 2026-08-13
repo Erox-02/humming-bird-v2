@@ -22,17 +22,19 @@ env_logger = "0.10"
 lazy_static = "1.4"
 cached = "0.46"
 chrono = "0.4"  
-
-pyo3 = { version = "0.20", features = ["extension-module", "abi3-py37"], optional = true }
+lightgbm3 = "1.0.10"
 
 [dev-dependencies]
 pretty_assertions = "1.0"
 
 [features]
 default = []
-python-bridge = ["pyo3"]
 
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = 3
+
+[[bin]]
+name = "train"
+path = "dev/train.rs"

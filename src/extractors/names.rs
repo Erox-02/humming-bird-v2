@@ -1,4 +1,4 @@
-}use crate::extractors::base::BaseExtractor;
+use crate::extractors::base::BaseExtractor;
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
@@ -55,15 +55,12 @@ impl NameExtractor {
         if len < 2 || len > 50 {
             return false;
         }
-        
         if value.chars().any(|c| c.is_ascii_digit()) {
             return false;
         }
-        
         if !self.is_valid_name_format(value) && !self.is_all_caps(value) {
             return false;
         }
-        
         let parts: Vec<&str> = value.split_whitespace().collect();
         for part in &parts {
             let upper = part.to_uppercase();
@@ -74,14 +71,11 @@ impl NameExtractor {
                 return false;
             }
         }
-        
         if !self.has_context_keyword(text, start, end, keywords) {
             return false;
         }
-        
         parts.len() <= 4
     }
-    
     fn extract_names(
         &self,
         text: &str,
@@ -97,7 +91,6 @@ impl NameExtractor {
             for caps in pattern.captures_iter(text) {
                 if let Some(matched) = caps.get(1) {
                     let value = matched.as_str().trim().to_string();
-                    
                     if !detected.contains(&value)
                         && self.is_person_name(&value, text, matched.start(), matched.end(), keywords)
                     {
@@ -123,7 +116,6 @@ impl Default for NameExtractor {
         Self::new()
     }
 }
-
 impl EntityExtractor for NameExtractor {
     fn extract(&self, text: &str) -> Vec<Entity> {
         if let Err(e) = self.validate_text(text) {
@@ -146,8 +138,7 @@ impl EntityExtractor for NameExtractor {
                 detected.insert(entity.value.clone());
                 all_entities.push(entity);
             }
-        }
-        
+        }   
         let physician_names = self.extract_names(
             text,
             &self.physician_patterns,
@@ -161,7 +152,6 @@ impl EntityExtractor for NameExtractor {
                 all_entities.push(entity);
             }
         }
-        
         let title_names = self.extract_names(
             text,
             &self.title_patterns,
