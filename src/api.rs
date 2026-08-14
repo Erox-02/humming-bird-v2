@@ -1,28 +1,15 @@
 use crate::core::Engine;
 use crate::schemas::ProcessResult;
 use std::collections::HashMap;
-
-#[cfg(feature = "python-bridge")]
-use crate::python_bridge::MLPredictor;
-
 pub struct HBP100 {
     engine: Engine,
 }
-
 impl HBP100 {
     pub fn new() -> Self {
         Self {
             engine: Engine::new(),
         }
     }
-    
-    #[cfg(feature = "python-bridge")]
-    pub fn with_predictor(mut self) -> Self {
-        let predictor = MLPredictor::new();
-        self.engine = self.engine.with_predictor(predictor);
-        self
-    }
-    
     pub fn process(&mut self, text: &str, intent: Option<&str>) -> ProcessResult {
         self.engine.process(text, intent)
     }
