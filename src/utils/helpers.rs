@@ -15,7 +15,6 @@ pub fn truncate_text(text: &str, max_length: usize, ellipsis: &str) -> String {
 pub fn safe_regex_escape(text: &str) -> String {
     regex::escape(text)
 }
-
 pub fn normalize_text(text: &str) -> String {
     let re = Regex::new(r"\s+").unwrap();
     re.replace_all(text.trim(), " ").to_string()

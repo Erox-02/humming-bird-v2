@@ -2,14 +2,11 @@ use log::{LevelFilter, Metadata, Record, SetLoggerError};
 use std::sync::Once;
 
 static INIT: Once = Once::new();
-
 struct SimpleLogger;
-
 impl log::Log for SimpleLogger {
     fn enabled(&self, _metadata: &Metadata) -> bool {
         true
     }
-    
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let level = record.level();
@@ -23,11 +20,9 @@ impl log::Log for SimpleLogger {
                 args
             );
         }
-    }
-    
+    }   
     fn flush(&self) {}
 }
-
 pub fn setup_logger() -> Result<(), SetLoggerError> {
     let mut result = Ok(());
     INIT.call_once(|| {
@@ -36,7 +31,6 @@ pub fn setup_logger() -> Result<(), SetLoggerError> {
     });
     result.map_err(|e| e)
 }
-
 pub fn get_logger() -> &'static str {
-    "hbp100"
+        "hbp100"
 }

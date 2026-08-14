@@ -13,11 +13,9 @@ impl HBP100 {
     pub fn process(&mut self, text: &str, intent: Option<&str>) -> ProcessResult {
         self.engine.process(text, intent)
     }
-    
     pub fn restore(&self, text: &str) -> String {
         self.engine.restore(text)
     }
-    
     pub fn restore_with_metadata(&self, text: &str, metadata: HashMap<String, String>) -> String {
         self.engine.restore_with_metadata(text, metadata)
     }
@@ -25,15 +23,12 @@ impl HBP100 {
     pub fn validate_response(&self, response: &str) -> (bool, Option<String>) {
         self.engine.validate_response(response)
     }
-    
     pub fn reset(&mut self) {
         self.engine.reset();
     }
-    
     pub fn metadata(&self) -> HashMap<String, String> {
         self.engine.metadata()
     }
-    
     pub fn version(&self) -> &'static str {
         self.engine.version()
     }
