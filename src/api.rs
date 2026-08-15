@@ -19,7 +19,6 @@ impl HBP100 {
     pub fn restore_with_metadata(&self, text: &str, metadata: HashMap<String, String>) -> String {
         self.engine.restore_with_metadata(text, metadata)
     }
-    
     pub fn validate_response(&self, response: &str) -> (bool, Option<String>) {
         self.engine.validate_response(response)
     }

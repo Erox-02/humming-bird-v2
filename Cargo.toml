@@ -34,3 +34,8 @@ default = []
 lto = true
 codegen-units = 1
 opt-level = 3
+
+[[bin]]
+name = "test"
+path = "dev/test.rs"
+publish = false 
