@@ -89,8 +89,7 @@ impl BaseExtractor for HospitalExtractor {
     fn compile_patterns(&mut self) {
         self.patterns = vec![
             Regex::new(
-                r"(?i)\b(?:Hospital|Medical Center|Clinic)[:\s]+([A-Z][a-zA-Z\s]+?)(?=\s+[A-Z]|$|[,.]|\n)"
-            ).unwrap(),
+                r"(?i)\b(?:Hospital|Medical Center|Clinic)[:\s]+([A-Z][a-zA-Z\s]+?)(?:\s+[A-Z]|$|[,.]|\n)"            ).unwrap(),
             Regex::new(
                 r"(?i)\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\s+(?:Hospital|Medical Center|Clinic))\b"
             ).unwrap(),

@@ -1,6 +1,6 @@
 [package]
 name = "hbp100"
-version = "3.0.0"
+version = "3.0.1"
 edition = "2021"
 authors = ["Dipanjan Dutta <relic.of.sky@.com>"]
 description = "HBP100: privacy preserving firewall for llm"

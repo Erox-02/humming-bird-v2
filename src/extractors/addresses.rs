@@ -66,10 +66,10 @@ impl BaseExtractor for AddressExtractor {
     fn compile_patterns(&mut self) {
         self.patterns = vec![
             Regex::new(
-                r"(?i)\b(?:Address|Mailing Address|Home Address)[:\s]+([^.\n]{10,100}?)(?=\s+(?:and|phone|email|policy|ssn|mrn|passport|[A-Z]{2,}\d)|\.|\n|$)"
+                r"(?i)\b(?:Address|Mailing Address|Home Address)[:\s]+([^.\n]{10,100}?)(?:\s+(?:and|phone|email|policy|ssn|mrn|passport|[A-Z]{2,}\d)|\.|\n|$)"
             ).unwrap(),
             Regex::new(
-                r"(?i)\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)(?=\s+(?:and|phone|email|policy|ssn|mrn|passport|[A-Z]{2,}\d)|\n|\.\s|\.$)"
+                r"(?i)\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)(?:\s+(?:and|phone|email|policy|ssn|mrn|passport|[A-Z]{2,}\d)|\n|\.\s|\.$)"
             ).unwrap(),
             Regex::new(
                 r"(?i)\b(\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl|Court|Ct)[,\s]+[A-Za-z]+[\s,]+[A-Z]{2}\s+\d{5}(?:-\d{4})?)\b"
