@@ -1,10 +1,12 @@
 [package]
 name = "hbp100"
-version = "3.0.1"
+version = "3.0.1+py"
 edition = "2021"
-authors = ["Dipanjan Dutta <relic.of.sky@.com>"]
-description = "HBP100: privacy preserving firewall for llm"
+authors = ["Dipanjan Dutta <relic.of.sky@gmail.com>"]
+description = "Hbp100: privacy preserving system for llm"
 license = "MIT"
+keywords = ["privacy", "pii", "masking", "llm", "security"]
+categories = ["privacy", "natural-language", "machine-learning"]
 
 [lib]
 name = "hbp100"
@@ -23,12 +25,10 @@ lazy_static = "1.4"
 cached = "0.46"
 chrono = "0.4"  
 lightgbm3 = "1.0.10"
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"]}
 
 [dev-dependencies]
 pretty_assertions = "1.0"
-
-[features]
-default = []
 
 [profile.release]
 lto = true
@@ -38,4 +38,4 @@ opt-level = 3
 [[bin]]
 name = "test"
 path = "dev/test.rs"
-publish = false 
+publish = false

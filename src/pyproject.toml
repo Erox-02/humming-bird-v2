@@ -1,0 +1,36 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "hbp100"
+version = "3.0.1"
+description = "HBP100: privacy preserving firewall for LLM"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Dipanjan Dutta", email = "relic.of.sky@gmail.com"}
+]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = []
+
+[project.urls]
+"Repository" = "https://github.com/Erox-02/humming-bird-v3"
+"Documentation" = "https://docs.rs/hbp100"
+
+[tool.maturin]
+module-name = "hbp100"
+features = ["python-bridge"]
