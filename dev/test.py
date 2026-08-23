@@ -1,8 +1,7 @@
 from hbp100 import HBP100
 
 def main():
-    print("🚀 Testing HBP100 Python bindings...")
-    
+        
     engine = HBP100()
     
     test_texts = [
