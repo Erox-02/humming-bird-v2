@@ -22,10 +22,8 @@ impl PlaceholderGenerator {
         let counter = self.counters.entry(entity_type.to_string()).or_insert(0);
         *counter += 1;
         let placeholder = format!("[{}_{}]", entity_type, counter);
-        
         self.vault.set(placeholder.clone(), entity.value.clone());
         log::debug!("Generated placeholder {} for {:?}", placeholder, entity.entity_type);
-        
         placeholder
     }   
     pub fn get_metadata(&self) -> HashMap<String, String> {
@@ -61,6 +59,7 @@ impl PlaceholderGenerator {
         }
     }
 }
+
 impl Default for PlaceholderGenerator {
     fn default() -> Self {
         Self::new()

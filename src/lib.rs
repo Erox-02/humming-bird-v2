@@ -12,7 +12,7 @@ use pyo3::prelude::*;
 pub use api::HBP100;
 pub use core::{Engine, Pipeline, EngineResult, PipelineResult};
 pub use extractors::*;
-pub use schemas::*;
+pub use schemas::{Session, ProcessResult, PrivacyDecision, Entity};
 pub use interfaces::*;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

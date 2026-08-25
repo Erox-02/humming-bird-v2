@@ -1,6 +1,6 @@
 [package]
 name = "hbp100"
-version = "3.0.1+py"
+version = "3.1.0"
 edition = "2021"
 authors = ["Dipanjan Dutta <relic.of.sky@gmail.com>"]
 description = "Hbp100: privacy preserving system for llm"
@@ -26,6 +26,7 @@ cached = "0.46"
 chrono = "0.4"  
 lightgbm3 = "1.0.10"
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"]}
+sha2 = "0.10"
 
 [dev-dependencies]
 pretty_assertions = "1.0"

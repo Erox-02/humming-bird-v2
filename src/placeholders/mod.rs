@@ -1,8 +1,10 @@
 pub mod generator;
 pub mod validator;
+mod session_aware_generator;
 pub mod restore;
 pub mod metadata;
 pub use generator::PlaceholderGenerator;
 pub use validator::PlaceholderValidator;
 pub use restore::PlaceholderRestorer;
+pub use session_aware_generator::SessionAwareGenerator;
 pub use metadata::MetadataVault;

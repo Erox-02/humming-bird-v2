@@ -2,6 +2,14 @@ use std::collections::HashMap;
 use regex::Regex;
 use log;
 
+static PLACEHOLDER_PATTERN: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+
+fn get_pattern() -> &'static Regex {
+    PLACEHOLDER_PATTERN.get_or_init(|| {
+        Regex::new(r"\[[A-Z_]+\d+\]").unwrap()
+    })
+}
+
 pub struct PlaceholderRestorer {
     vault: HashMap<String, String>,
     pattern: Regex,
@@ -10,7 +18,7 @@ pub struct PlaceholderRestorer {
 impl PlaceholderRestorer {
     pub fn new() -> Self {
         Self {
-            vault: HashMap::new(),
+            vault: HashMap::with_capacity(64),
             pattern: Regex::new(r"\[[A-Z_]+_\d+\]").unwrap(),
         }
     }
@@ -72,6 +80,14 @@ impl PlaceholderRestorer {
         self.vault = metadata;
     }
     
+    pub fn get_all_metadata(&self) -> HashMap<String, String> {
+        self.vault.clone()
+    }
+    
+    pub fn extend_metadata(&mut self, metadata: HashMap<String, String>) {
+        self.vault.extend(metadata);
+    }
+   
     pub fn reset(&mut self) {
         self.vault.clear();
         log::debug!("Placeholder restorer reset");
