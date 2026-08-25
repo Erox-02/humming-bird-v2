@@ -6,7 +6,6 @@ authors = ["Dipanjan Dutta <relic.of.sky@gmail.com>"]
 description = "Hbp100: privacy preserving system for llm"
 license = "MIT"
 keywords = ["privacy", "pii", "masking", "llm", "security"]
-categories = ["privacy", "natural-language", "machine-learning"]
 
 [lib]
 name = "hbp100"
