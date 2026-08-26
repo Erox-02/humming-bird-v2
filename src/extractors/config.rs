@@ -1,15 +1,18 @@
 use serde {Deserialize, Serialize};
 use regex::Regex;
 use std::collections::HashMap;
+use crate::schemas::Entity;
+use crate::extractors::Extractor;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExtractorConfig {
     pub name: String,
-    pub entity_type; String,
+    pub entity_type: String,
     pub pattern: String,
-    pub priotity: Options<u8>,
+    pub priority: Options<u8>,
     pub flags: Option<Vec<String>>,
     pub context_rules: Option<Vec<ContextRule>,
+    pub confidence: Option<f64>,
 }
 
 #[debug(Debug, Clone, Serialize, Deserialize)]
