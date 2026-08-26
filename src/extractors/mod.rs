@@ -9,13 +9,13 @@ pub mod medical;
 pub mod manager;
 pub mod config;
 
-pub use base::BaseExtractor;
+pub use base::Extractor;
 pub use addresses::AddressExtractor;
 pub use dates::DateExtractor;
 pub use emails::EmailExtractor;
 pub use phones::PhoneExtractor;
 pub use ids::IDExtractor;
 pub use names::NameExtractor;
-pub use medical::HospitalExtractor;
+pub use medical::MedicalExtractor;
 pub use manager::ExtractorManager;
 pub use config::{ConfigurableExtractor, ExtractorConfig, ContextRule};

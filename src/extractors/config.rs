@@ -1,21 +1,21 @@
-use serde {Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use regex::Regex;
 use std::collections::HashMap;
-use crate::schemas::Entity;
-use crate::extractors::Extractor;
+use crate::schemas::{Entity, EntityType};
+use crate::base::Extractor;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExtractorConfig {
     pub name: String,
     pub entity_type: String,
     pub pattern: String,
-    pub priority: Options<u8>,
+    pub priority: Option<u8>,
     pub flags: Option<Vec<String>>,
-    pub context_rules: Option<Vec<ContextRule>,
+    pub context_rules: Option<Vec<ContextRule>>,
     pub confidence: Option<f64>,
 }
 
-#[debug(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContextRule {
     pub before: Option<String>,
     pub after: Option<String>,
@@ -38,14 +38,15 @@ impl Extractor for ConfigurableExtractor {
     fn name(&self) -> &str {
         &self.config.name
     }   
-    fn entity_type(&self) -> &str {
-        &self.config.entity_type
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::from(self.config.entity_type.clone())]
     }
     fn extract(&self, text: &str) -> Vec<Entity> {
+        let confidence = self.config.confidence.unwrap_or(0.85);
         self.regex
             .find_iter(text)
             .map(|m| Entity {
-                entity_type: self.config.entity_type.clone().into(),
+                entity_type: EntityType::from(self.config.entity_type.clone()),
                 value: m.as_str().to_string(),
                 start: m.start(),
                 end: m.end(),

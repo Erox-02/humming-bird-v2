@@ -1,4 +1,3 @@
-use crate::extractors::base::BaseExtractor;
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
@@ -9,7 +8,7 @@ struct IDConfig {
     labels: Vec<String>,
     min_length: usize,
     pattern: String,
-    confidence: f32,
+    confidence: f64,
 }
 
 pub struct IDExtractor {
@@ -30,7 +29,7 @@ impl IDExtractor {
     fn get_configs() -> HashMap<EntityType, IDConfig> {
         let mut configs = HashMap::new();
         configs.insert(
-            EntityType::MRN,
+            EntityType::ID,
             IDConfig {
                 labels: vec![r"\b(?:MRN|Medical Record Number)[:\s]+".to_string()],
                 min_length: 4,
@@ -39,7 +38,7 @@ impl IDExtractor {
             },
         );
         configs.insert(
-            EntityType::PatientId,
+            EntityType::ID,
             IDConfig {
                 labels: vec![r"\b(?:Patient ID|PID|Patient Identifier)[:\s]+".to_string()],
                 min_length: 4,
@@ -48,7 +47,7 @@ impl IDExtractor {
             },
         );
         configs.insert(
-            EntityType::CaseId,
+            EntityType::ID,
             IDConfig {
                 labels: vec![r"\b(?:Case Number|Case No|Case ID)[:\s]+".to_string()],
                 min_length: 4,
@@ -57,7 +56,7 @@ impl IDExtractor {
             },
         );
         configs.insert(
-            EntityType::PolicyNumber,
+            EntityType::ID,
             IDConfig {
                 labels: vec![
                     r"\b(?:Policy Number|Policy No|Policy ID|Insurance Policy)[:\s]+".to_string(),
@@ -68,16 +67,16 @@ impl IDExtractor {
             },
         );
         configs.insert(
-            EntityType::SSN,
+            EntityType::ID,
             IDConfig {
                 labels: vec![r"\b(?:SSN|Social Security Number)[:\s]+".to_string()],
                 min_length: 9,
                 pattern: r"(\d{3}-\d{2}-\d{4})\b".to_string(),
-                confidence: 0.95,
+                confidence: 0.99,
             },
         );
         configs.insert(
-            EntityType::Passport,
+            EntityType::ID,
             IDConfig {
                 labels: vec![r"\b(?:Passport|Passport Number|Passport No)[:\s]+".to_string()],
                 min_length: 6,
@@ -102,13 +101,35 @@ impl Default for IDExtractor {
         Self::new()
     }
 }
-impl EntityExtractor for IDExtractor {
-    fn extract(&self, text: &str) -> Vec<Entity> {
-        if let Err(e) = self.validate_text(text) {
-            log::warn!("Validation failed: {}", e);
-            return Vec::new();
-        }
+
+impl IDExtractor {
+    fn compile_patterns(&mut self) {
+        self.configs = Self::get_configs();
+        self.patterns.clear();
         
+        for (entity_type, config) in &self.configs {
+            let mut patterns = Vec::new();
+            for label in &config.labels {
+                let full_pattern = format!("{}{}", label, config.pattern);
+                if let Ok(re) = Regex::new(&full_pattern) {
+                    patterns.push(re);
+                }
+            }
+            self.patterns.insert(*entity_type, patterns);
+        }
+    }
+}
+
+impl EntityExtractor for IDExtractor {
+    fn name(&self) -> &str {
+        "IDExtractor"
+    }
+
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::ID]
+    }
+
+    fn extract(&self, text: &str) -> Vec<Entity> {
         let mut entities = Vec::new();
         let mut detected = HashSet::new();
         
@@ -129,13 +150,13 @@ impl EntityExtractor for IDExtractor {
                         let cleaned = Self::clean_id(&value);
                         if cleaned.len() >= config.min_length {
                             detected.insert(value.clone());
-                            entities.push(Entity::new(
-                                *entity_type,
+                            entities.push(Entity {
+                                entity_type: *entity_type,
                                 value,
-                                matched.start(),
-                                matched.end(),
-                                config.confidence,
-                            ));
+                                start: matched.start(),
+                                end: matched.end(),
+                                confidence: config.confidence,
+                            });
                         }
                     }
                 }
@@ -143,27 +164,5 @@ impl EntityExtractor for IDExtractor {
         }
         
         entities
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        self.configs.keys().cloned().collect()
-    }
-}
-
-impl BaseExtractor for IDExtractor {
-    fn compile_patterns(&mut self) {
-        self.configs = Self::get_configs();
-        self.patterns.clear();
-        
-        for (entity_type, config) in &self.configs {
-            let mut patterns = Vec::new();
-            for label in &config.labels {
-                let full_pattern = format!("{}{}", label, config.pattern);
-                if let Ok(re) = Regex::new(&full_pattern) {
-                    patterns.push(re);
-                }
-            }
-            self.patterns.insert(*entity_type, patterns);
-        }
     }
 }

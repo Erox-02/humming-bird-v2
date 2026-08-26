@@ -1,4 +1,3 @@
-use crate::extractors::base::BaseExtractor;
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
@@ -43,152 +42,6 @@ impl NameExtractor {
         extractor
     }
     
-    fn is_person_name(
-        &self,
-        value: &str,
-        text: &str,
-        start: usize,
-        end: usize,
-        keywords: &[&str],
-    ) -> bool {
-        let len = value.len();
-        if len < 2 || len > 50 {
-            return false;
-        }
-        if value.chars().any(|c| c.is_ascii_digit()) {
-            return false;
-        }
-        if !self.is_valid_name_format(value) && !self.is_all_caps(value) {
-            return false;
-        }
-        let parts: Vec<&str> = value.split_whitespace().collect();
-        for part in &parts {
-            let upper = part.to_uppercase();
-            if Self::TITLE_WORDS.contains(&upper.as_str()) {
-                return false;
-            }
-            if Self::MEDICAL_WORDS.contains(&upper.as_str()) {
-                return false;
-            }
-        }
-        if !self.has_context_keyword(text, start, end, keywords) {
-            return false;
-        }
-        parts.len() <= 4
-    }
-    fn extract_names(
-        &self,
-        text: &str,
-        patterns: &[Regex],
-        entity_type: EntityType,
-        keywords: &[&str],
-        confidence: f32,
-    ) -> Vec<Entity> {
-        let mut entities = Vec::new();
-        let mut detected = HashSet::new();
-        
-        for pattern in patterns {
-            for caps in pattern.captures_iter(text) {
-                if let Some(matched) = caps.get(1) {
-                    let value = matched.as_str().trim().to_string();
-                    if !detected.contains(&value)
-                        && self.is_person_name(&value, text, matched.start(), matched.end(), keywords)
-                    {
-                        detected.insert(value.clone());
-                        entities.push(Entity::new(
-                            entity_type,
-                            value,
-                            matched.start(),
-                            matched.end(),
-                            confidence,
-                        ));
-                    }
-                }
-            }
-        }
-        
-        entities
-    }
-}
-
-impl Default for NameExtractor {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-impl EntityExtractor for NameExtractor {
-    fn extract(&self, text: &str) -> Vec<Entity> {
-        if let Err(e) = self.validate_text(text) {
-            log::warn!("Validation failed: {}", e);
-            return Vec::new();
-        }
-        
-        let mut all_entities = Vec::new();
-        let mut detected = HashSet::new();
-        
-        let patient_names = self.extract_names(
-            text,
-            &self.patient_patterns,
-            EntityType::Name,
-            Self::NAME_KEYWORDS,
-            0.80,
-        );
-        for entity in patient_names {
-            if !detected.contains(&entity.value) {
-                detected.insert(entity.value.clone());
-                all_entities.push(entity);
-            }
-        }   
-        let physician_names = self.extract_names(
-            text,
-            &self.physician_patterns,
-            EntityType::Physician,
-            Self::PHYSICIAN_KEYWORDS,
-            0.85,
-        );
-        for entity in physician_names {
-            if !detected.contains(&entity.value) {
-                detected.insert(entity.value.clone());
-                all_entities.push(entity);
-            }
-        }
-        let title_names = self.extract_names(
-            text,
-            &self.title_patterns,
-            EntityType::Name,
-            Self::NAME_KEYWORDS,
-            0.80,
-        );
-        for entity in title_names {
-            if !detected.contains(&entity.value) {
-                detected.insert(entity.value.clone());
-                all_entities.push(entity);
-            }
-        }
-        
-        let called_names = self.extract_names(
-            text,
-            &self.called_patterns,
-            EntityType::Name,
-            Self::NAME_KEYWORDS,
-            0.75,
-        );
-        for entity in called_names {
-            if !detected.contains(&entity.value) {
-                detected.insert(entity.value.clone());
-                all_entities.push(entity);
-            }
-        }
-        
-        all_entities
-    }
-    
-    fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::Name, EntityType::Physician]
-    }
-}
-
-impl BaseExtractor for NameExtractor {
     fn compile_patterns(&mut self) {
         self.patient_patterns = vec![
             Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
@@ -223,5 +76,122 @@ impl BaseExtractor for NameExtractor {
             Regex::new(r"(?i)\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
             Regex::new(r"(?i)\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
         ];
+    }
+    
+    fn is_person_name(&self, value: &str) -> bool {
+        let len = value.len();
+        if len < 2 || len > 50 {
+            return false;
+        }
+        if value.chars().any(|c| c.is_ascii_digit()) {
+            return false;
+        }
+        
+        let parts: Vec<&str> = value.split_whitespace().collect();
+        for part in &parts {
+            let upper = part.to_uppercase();
+            if Self::TITLE_WORDS.contains(&upper.as_str()) {
+                return false;
+            }
+            if Self::MEDICAL_WORDS.contains(&upper.as_str()) {
+                return false;
+            }
+        }
+        parts.len() <= 4
+    }
+}
+
+impl Default for NameExtractor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EntityExtractor for NameExtractor {
+    fn name(&self) -> &str {
+        "NameExtractor"
+    }
+
+    fn supported_types(&self) -> Vec<EntityType> {
+        vec![EntityType::NAME]
+    }
+
+    fn extract(&self, text: &str) -> Vec<Entity> {
+        let mut entities = Vec::new();
+        let mut detected = HashSet::new();
+        
+        for pattern in &self.patient_patterns {
+            for caps in pattern.captures_iter(text) {
+                if let Some(matched) = caps.get(1) {
+                    let value = matched.as_str().trim().to_string();
+                    if !detected.contains(&value) && self.is_person_name(&value) {
+                        detected.insert(value.clone());
+                        entities.push(Entity {
+                            entity_type: EntityType::NAME,
+                            value,
+                            start: matched.start(),
+                            end: matched.end(),
+                            confidence: 0.80,
+                        });
+                    }
+                }
+            }
+        }
+        
+        for pattern in &self.physician_patterns {
+            for caps in pattern.captures_iter(text) {
+                if let Some(matched) = caps.get(1) {
+                    let value = matched.as_str().trim().to_string();
+                    if !detected.contains(&value) && self.is_person_name(&value) {
+                        detected.insert(value.clone());
+                        entities.push(Entity {
+                            entity_type: EntityType::NAME,
+                            value,
+                            start: matched.start(),
+                            end: matched.end(),
+                            confidence: 0.85,
+                        });
+                    }
+                }
+            }
+        }
+        
+        for pattern in &self.title_patterns {
+            for caps in pattern.captures_iter(text) {
+                if let Some(matched) = caps.get(1) {
+                    let value = matched.as_str().trim().to_string();
+                    if !detected.contains(&value) && self.is_person_name(&value) {
+                        detected.insert(value.clone());
+                        entities.push(Entity {
+                            entity_type: EntityType::NAME,
+                            value,
+                            start: matched.start(),
+                            end: matched.end(),
+                            confidence: 0.80,
+                        });
+                    }
+                }
+            }
+        }
+        
+        for pattern in &self.called_patterns {
+            for caps in pattern.captures_iter(text) {
+                if let Some(matched) = caps.get(1) {
+                    let value = matched.as_str().trim().to_string();
+                    if !detected.contains(&value) && self.is_person_name(&value) {
+                        detected.insert(value.clone());
+                        entities.push(Entity {
+                            entity_type: EntityType::NAME,
+                            value,
+                            start: matched.start(),
+                            end: matched.end(),
+                            confidence: 0.75,
+                        });
+                    }
+                }
+            }
+        }
+        
+        entities
     }
 }
