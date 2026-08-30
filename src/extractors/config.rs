@@ -1,18 +1,18 @@
 use serde::{Deserialize, Serialize};
 use regex::Regex;
-use std::collections::HashMap;
 use crate::schemas::{Entity, EntityType};
-use crate::base::Extractor;
+use crate::interfaces::EntityExtractor;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExtractorConfig {
     pub name: String,
     pub entity_type: String,
     pub pattern: String,
+    pub confidence: Option<f32>,
     pub priority: Option<u8>,
     pub flags: Option<Vec<String>>,
     pub context_rules: Option<Vec<ContextRule>>,
-    pub confidence: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +21,7 @@ pub struct ContextRule {
     pub after: Option<String>,
     pub required: bool,
 }
+
 pub struct ConfigurableExtractor {
     config: ExtractorConfig,
     regex: Regex,
@@ -34,15 +35,18 @@ impl ConfigurableExtractor {
     }
 }
 
-impl Extractor for ConfigurableExtractor {
+impl EntityExtractor for ConfigurableExtractor {
     fn name(&self) -> &str {
         &self.config.name
-    }   
+    }
+
     fn supported_types(&self) -> Vec<EntityType> {
         vec![EntityType::from(self.config.entity_type.clone())]
     }
+
     fn extract(&self, text: &str) -> Vec<Entity> {
         let confidence = self.config.confidence.unwrap_or(0.85);
+        
         self.regex
             .find_iter(text)
             .map(|m| Entity {
@@ -51,6 +55,8 @@ impl Extractor for ConfigurableExtractor {
                 start: m.start(),
                 end: m.end(),
                 confidence,
+                placeholder: None,
+                metadata: HashMap::new(),
             })
             .collect()
     }

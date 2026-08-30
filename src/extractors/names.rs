@@ -1,7 +1,7 @@
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct NameExtractor {
     patient_patterns: Vec<Regex>,
@@ -113,7 +113,7 @@ impl EntityExtractor for NameExtractor {
     }
 
     fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::NAME]
+        vec![EntityType::Name]
     }
 
     fn extract(&self, text: &str) -> Vec<Entity> {
@@ -127,11 +127,13 @@ impl EntityExtractor for NameExtractor {
                     if !detected.contains(&value) && self.is_person_name(&value) {
                         detected.insert(value.clone());
                         entities.push(Entity {
-                            entity_type: EntityType::NAME,
+                            entity_type: EntityType::Name,
                             value,
                             start: matched.start(),
                             end: matched.end(),
                             confidence: 0.80,
+                            placeholder: None,
+                            metadata: HashMap::new(),
                         });
                     }
                 }
@@ -145,11 +147,13 @@ impl EntityExtractor for NameExtractor {
                     if !detected.contains(&value) && self.is_person_name(&value) {
                         detected.insert(value.clone());
                         entities.push(Entity {
-                            entity_type: EntityType::NAME,
+                            entity_type: EntityType::Name,
                             value,
                             start: matched.start(),
                             end: matched.end(),
                             confidence: 0.85,
+                            placeholder: None,
+                            metadata: HashMap::new(),
                         });
                     }
                 }
@@ -163,11 +167,13 @@ impl EntityExtractor for NameExtractor {
                     if !detected.contains(&value) && self.is_person_name(&value) {
                         detected.insert(value.clone());
                         entities.push(Entity {
-                            entity_type: EntityType::NAME,
+                            entity_type: EntityType::Name,
                             value,
                             start: matched.start(),
                             end: matched.end(),
                             confidence: 0.80,
+                            placeholder: None,
+                            metadata: HashMap::new(),
                         });
                     }
                 }
@@ -181,11 +187,13 @@ impl EntityExtractor for NameExtractor {
                     if !detected.contains(&value) && self.is_person_name(&value) {
                         detected.insert(value.clone());
                         entities.push(Entity {
-                            entity_type: EntityType::NAME,
+                            entity_type: EntityType::Name,
                             value,
                             start: matched.start(),
                             end: matched.end(),
                             confidence: 0.75,
+                            placeholder: None,
+                            metadata: HashMap::new(),
                         });
                     }
                 }

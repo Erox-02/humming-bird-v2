@@ -1,7 +1,7 @@
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct DateExtractor {
     patterns: Vec<Regex>,
@@ -42,7 +42,7 @@ impl EntityExtractor for DateExtractor {
     }
 
     fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::DATE]
+        vec![EntityType::Date]
     }
 
     fn extract(&self, text: &str) -> Vec<Entity> {
@@ -55,11 +55,13 @@ impl EntityExtractor for DateExtractor {
                 if !detected.contains(&value) {
                     detected.insert(value.clone());
                     entities.push(Entity {
-                        entity_type: EntityType::DATE,
+                        entity_type: EntityType::Date,
                         value,
                         start: m.start(),
                         end: m.end(),
                         confidence: 0.90,
+                        placeholder: None,
+                        metadata: HashMap::new(),
                     });
                 }
             }

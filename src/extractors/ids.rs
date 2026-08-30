@@ -8,7 +8,7 @@ struct IDConfig {
     labels: Vec<String>,
     min_length: usize,
     pattern: String,
-    confidence: f64,
+    confidence: f32,
 }
 
 pub struct IDExtractor {
@@ -29,58 +29,18 @@ impl IDExtractor {
     fn get_configs() -> HashMap<EntityType, IDConfig> {
         let mut configs = HashMap::new();
         configs.insert(
-            EntityType::ID,
-            IDConfig {
-                labels: vec![r"\b(?:MRN|Medical Record Number)[:\s]+".to_string()],
-                min_length: 4,
-                pattern: r"([A-Z0-9]{4,20})\b".to_string(),
-                confidence: 0.90,
-            },
-        );
-        configs.insert(
-            EntityType::ID,
-            IDConfig {
-                labels: vec![r"\b(?:Patient ID|PID|Patient Identifier)[:\s]+".to_string()],
-                min_length: 4,
-                pattern: r"([A-Z0-9][-]?[A-Z0-9]{3,20})\b".to_string(),
-                confidence: 0.90,
-            },
-        );
-        configs.insert(
-            EntityType::ID,
-            IDConfig {
-                labels: vec![r"\b(?:Case Number|Case No|Case ID)[:\s]+".to_string()],
-                min_length: 4,
-                pattern: r"([A-Z0-9][-]?[A-Z0-9]{3,20})\b".to_string(),
-                confidence: 0.90,
-            },
-        );
-        configs.insert(
-            EntityType::ID,
+            EntityType::Id,
             IDConfig {
                 labels: vec![
+                    r"\b(?:MRN|Medical Record Number)[:\s]+".to_string(),
+                    r"\b(?:Patient ID|PID|Patient Identifier)[:\s]+".to_string(),
+                    r"\b(?:Case Number|Case No|Case ID)[:\s]+".to_string(),
                     r"\b(?:Policy Number|Policy No|Policy ID|Insurance Policy)[:\s]+".to_string(),
+                    r"\b(?:SSN|Social Security Number)[:\s]+".to_string(),
+                    r"\b(?:Passport|Passport Number|Passport No)[:\s]+".to_string(),
                 ],
-                min_length: 5,
-                pattern: r"([A-Z0-9][-]?[A-Z0-9]{4,20})\b".to_string(),
-                confidence: 0.90,
-            },
-        );
-        configs.insert(
-            EntityType::ID,
-            IDConfig {
-                labels: vec![r"\b(?:SSN|Social Security Number)[:\s]+".to_string()],
-                min_length: 9,
-                pattern: r"(\d{3}-\d{2}-\d{4})\b".to_string(),
-                confidence: 0.99,
-            },
-        );
-        configs.insert(
-            EntityType::ID,
-            IDConfig {
-                labels: vec![r"\b(?:Passport|Passport Number|Passport No)[:\s]+".to_string()],
-                min_length: 6,
-                pattern: r"([A-Z0-9]{6,12})\b".to_string(),
+                min_length: 4,
+                pattern: r"([A-Z0-9][-]?[A-Z0-9]{3,20})\b".to_string(),
                 confidence: 0.90,
             },
         );
@@ -115,7 +75,7 @@ impl IDExtractor {
                     patterns.push(re);
                 }
             }
-            self.patterns.insert(*entity_type, patterns);
+            self.patterns.insert(entity_type.clone(), patterns);
         }
     }
 }
@@ -126,7 +86,7 @@ impl EntityExtractor for IDExtractor {
     }
 
     fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::ID]
+        vec![EntityType::Id]
     }
 
     fn extract(&self, text: &str) -> Vec<Entity> {
@@ -151,11 +111,13 @@ impl EntityExtractor for IDExtractor {
                         if cleaned.len() >= config.min_length {
                             detected.insert(value.clone());
                             entities.push(Entity {
-                                entity_type: *entity_type,
+                                entity_type: entity_type.clone(),
                                 value,
                                 start: matched.start(),
                                 end: matched.end(),
                                 confidence: config.confidence,
+                                placeholder: None,
+                                metadata: HashMap::new(),
                             });
                         }
                     }

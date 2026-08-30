@@ -1,7 +1,7 @@
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct MedicalExtractor {
     patterns: Vec<Regex>,
@@ -42,7 +42,7 @@ impl EntityExtractor for MedicalExtractor {
     }
 
     fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::MEDICAL]
+        vec![EntityType::Medical]
     }
 
     fn extract(&self, text: &str) -> Vec<Entity> {
@@ -83,11 +83,13 @@ impl EntityExtractor for MedicalExtractor {
                 
                 detected.insert(value.clone());
                 entities.push(Entity {
-                    entity_type: EntityType::MEDICAL,
+                    entity_type: EntityType::Medical,
                     value,
                     start,
                     end,
                     confidence: 0.80,
+                    placeholder: None,
+                    metadata: HashMap::new(),
                 });
             }
         }

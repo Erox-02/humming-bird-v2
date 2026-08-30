@@ -1,7 +1,7 @@
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct PhoneExtractor {
     patterns: Vec<Regex>,
@@ -40,7 +40,7 @@ impl EntityExtractor for PhoneExtractor {
     }
 
     fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::PHONE]
+        vec![EntityType::Phone]
     }
 
     fn extract(&self, text: &str) -> Vec<Entity> {
@@ -55,11 +55,13 @@ impl EntityExtractor for PhoneExtractor {
                 if !detected_digits.contains(&cleaned) && (10..=15).contains(&cleaned.len()) {
                     detected_digits.insert(cleaned);
                     entities.push(Entity {
-                        entity_type: EntityType::PHONE,
+                        entity_type: EntityType::Phone,
                         value,
                         start: m.start(),
                         end: m.end(),
                         confidence: 0.95,
+                        placeholder: None,
+                        metadata: HashMap::new(),
                     });
                 }
             }

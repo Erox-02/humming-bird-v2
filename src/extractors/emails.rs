@@ -1,7 +1,7 @@
 use crate::interfaces::EntityExtractor;
 use crate::schemas::{Entity, EntityType};
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct EmailExtractor {
     patterns: Vec<Regex>,
@@ -37,7 +37,7 @@ impl EntityExtractor for EmailExtractor {
     }
 
     fn supported_types(&self) -> Vec<EntityType> {
-        vec![EntityType::EMAIL]
+        vec![EntityType::Email]
     }
 
     fn extract(&self, text: &str) -> Vec<Entity> {
@@ -50,11 +50,13 @@ impl EntityExtractor for EmailExtractor {
                 if !detected.contains(&value) {
                     detected.insert(value.clone());
                     entities.push(Entity {
-                        entity_type: EntityType::EMAIL,
+                        entity_type: EntityType::Email,
                         value,
                         start: m.start(),
                         end: m.end(),
                         confidence: 0.99,
+                        placeholder: None,
+                        metadata: HashMap::new(),
                     });
                 }
             }
