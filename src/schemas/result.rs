@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use super::{Entity, PrivacyDecision};
+use crate::schemas::{Entity, PrivacyDecision};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessResult {
@@ -13,13 +13,10 @@ pub struct ProcessResult {
 }
 
 impl ProcessResult {
-    pub fn new(
-        original_text: impl Into<String>,
-        masked_text: impl Into<String>,
-    ) -> Self {
+    pub fn new(original: &str, masked: &str) -> Self {
         Self {
-            original_text: original_text.into(),
-            masked_text: masked_text.into(),
+            original_text: original.to_string(),
+            masked_text: masked.to_string(),
             metadata: HashMap::new(),
             entities: Vec::new(),
             decisions: Vec::new(),
@@ -27,14 +24,18 @@ impl ProcessResult {
         }
     }
 
-    pub fn to_dict(&self) -> serde_json::Value {
-        serde_json::json!({
-            "original_text": self.original_text,
-            "masked_text": self.masked_text,
-            "metadata": self.metadata,
-            "has_pii": self.has_pii,
-            "entities": self.entities.iter().map(|e| e.to_dict()).collect::<Vec<_>>(),
-            "decisions": self.decisions.iter().map(|d| d.to_dict()).collect::<Vec<_>>(),
-        })
+    pub fn to_dict(&self) -> HashMap<String, serde_json::Value> {
+        let mut map = HashMap::new();
+        map.insert("original_text".to_string(), serde_json::Value::String(self.original_text.clone()));
+        map.insert("masked_text".to_string(), serde_json::Value::String(self.masked_text.clone()));
+        map.insert("has_pii".to_string(), serde_json::Value::Bool(self.has_pii));
+        
+        let entities: Vec<HashMap<String, String>> = self.entities
+            .iter()
+            .map(|e| e.to_dict())
+            .collect();
+        map.insert("entities".to_string(), serde_json::to_value(entities).unwrap());
+        
+        map
     }
 }

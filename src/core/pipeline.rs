@@ -5,20 +5,21 @@ use crate::placeholders::{
     PlaceholderRestorer,
     SessionAwareGenerator,
 };
-
 use crate::policy_engine::PrivacyPredictor;
 use crate::schemas::{Entity, PrivacyDecision, ProcessResult};
-use crate::schemas::session::Session;
+use crate::Session;
 use log;
 use std::collections::HashMap;
 use std::collections::HashSet;
+
 pub type PipelineResult = ProcessResult;
+
 pub struct Pipeline {
-    extractor_manager: ExtractorManager,
-    generator: PlaceholderGenerator,
-    validator: PlaceholderValidator,
-    restorer: PlaceholderRestorer,
-    predictor: PrivacyPredictor,
+    pub extractor_manager: ExtractorManager,
+    pub generator: PlaceholderGenerator,
+    pub validator: PlaceholderValidator,
+    pub restorer: PlaceholderRestorer,
+    pub predictor: PrivacyPredictor,
 }
 
 impl Pipeline {
@@ -34,25 +35,26 @@ impl Pipeline {
     pub fn process(&mut self, text: &str, intent: Option<&str>) -> ProcessResult {
         if text.trim().is_empty() {
             return ProcessResult::new(text, text);
-        }   
+        }
         self.generator.reset();
         self.validator.reset();
         self.restorer.reset();
-        log::info!("Processing text (length: {} chars)", text.len());
+        log::debug!("Processing text (length: {} chars)", text.len());
         let entities = self.extractor_manager.extract_all(text);
-        log::info!("Extracted {} entities", entities.len());
+        log::debug!("Extracted {} entities", entities.len());
         if entities.is_empty() {
             return ProcessResult::new(text, text);
         }
-        let decisions=self.predictor.predict_batch(
+
+        let decisions = self.predictor.predict_batch(
             &entities,
             text,
             intent,
         );
-        log::info!("Predicted {} decisions", decisions.len());
+        log::debug!("Predicted {} decisions", decisions.len());
         let (masked_text, metadata) = self.apply_masking(text, &entities, &decisions);
-        log::info!("Masked {} entities", metadata.len());
-        let allowed:HashSet<String>=metadata.keys().cloned().collect();
+        log::debug!("Masked {} entities", metadata.len());
+        let allowed: HashSet<String> = metadata.keys().cloned().collect();
         self.validator.update_allowed(allowed);
         self.restorer.update_metadata(metadata.clone());
         let has_pii = decisions.iter().any(|d| d.should_mask());
@@ -109,24 +111,31 @@ impl Pipeline {
             has_pii,
         }
     }
-    fn apply_masking(
+
+    pub fn apply_masking(
         &self,
         text: &str,
         entities: &[Entity],
         decisions: &[PrivacyDecision],
     ) -> (String, HashMap<String, String>) {
-        let decision_map: HashMap<&Entity, &PrivacyDecision> = decisions
-            .iter()
-            .map(|d| (&d.entity, d))
-            .collect();
-        let mut sorted_entities: Vec<&Entity> = entities.iter().collect();
-        sorted_entities.sort_by(|a, b| b.start.cmp(&a.start));
-        
+        let mut decision_map = HashMap::new();
+        for (i, decision) in decisions.iter().enumerate() {
+            decision_map.insert(i, decision);
+        }
+
+        let mut sorted_indices: Vec<usize> = (0..entities.len()).collect();
+        sorted_indices.sort_by(|&a, &b| {
+            entities[b].end.cmp(&entities[a].end)
+        });
+
         let mut masked = text.to_string();
         let mut metadata = HashMap::new();
+
         let mut generator = PlaceholderGenerator::new();
-        for entity in sorted_entities {
-            if let Some(decision) = decision_map.get(&entity) {
+
+        for &idx in &sorted_indices {
+            let entity = &entities[idx];
+            if let Some(decision) = decision_map.get(&idx) {
                 if decision.should_mask() {
                     let placeholder = generator.generate(entity);
                     let start = entity.start;
@@ -136,26 +145,36 @@ impl Pipeline {
                 }
             }
         }
+
         (masked, metadata)
     }
-    fn apply_masking_with_session(
+
+    pub fn apply_masking_with_session(
         &self,
         text: &str,
         entities: &[Entity],
         decisions: &[PrivacyDecision],
         session: &mut Session,
     ) -> (String, HashMap<String, String>) {
-        let decision_map: HashMap<&Entity, &PrivacyDecision> = decisions
-            .iter()
-            .map(|d| (&d.entity, d))
-            .collect();
-        let mut sorted_entities: Vec<&Entity> = entities.iter().collect();
-        sorted_entities.sort_by(|a, b| b.start.cmp(&a.start));
+        // Build map using index position instead of Entity reference
+        let mut decision_map = HashMap::new();
+        for (i, decision) in decisions.iter().enumerate() {
+            decision_map.insert(i, decision);
+        }
+
+        let mut sorted_indices: Vec<usize> = (0..entities.len()).collect();
+        sorted_indices.sort_by(|&a, &b| {
+            entities[b].end.cmp(&entities[a].end)
+        });
+
         let mut masked = text.to_string();
         let mut metadata = HashMap::new();
+
         let mut generator = SessionAwareGenerator::new(session);
-        for entity in sorted_entities {
-            if let Some(decision) = decision_map.get(&entity) {
+
+        for &idx in &sorted_indices {
+            let entity = &entities[idx];
+            if let Some(decision) = decision_map.get(&idx) {
                 if decision.should_mask() {
                     let placeholder = generator.generate(
                         entity.entity_type.as_str(),
@@ -168,22 +187,59 @@ impl Pipeline {
                 }
             }
         }
+
         (masked, metadata)
     }
+
     pub fn restore_placeholders(&self, text: &str) -> String {
         self.restorer.restore(text)
     }
+
     pub fn restore_with_metadata(&self, text: &str, metadata: HashMap<String, String>) -> String {
         self.restorer.restore_with_metadata(text, metadata)
     }
+
     pub fn validate_response(&self, response: &str) -> (bool, Option<String>) {
         self.validator.validate(response)
     }
+
     pub fn reset(&mut self) {
         self.generator.reset();
         self.validator.reset();
         self.restorer.reset();
         log::info!("Pipeline reset");
+    }
+    
+    pub fn metadata(&self) -> HashMap<String, String> {
+        self.restorer.get_all_metadata()
+    }
+
+    pub fn add_config_extractor(&mut self, config_json: &str) -> Result<(), String> {
+        self.extractor_manager.add_config_from_json(config_json)
+    }
+
+    pub fn add_config_extractor_from_file(&mut self, path: &str) -> Result<(), String> {
+        self.extractor_manager.add_config_from_file(path)
+    }
+
+    pub fn enable_extractor(&mut self, name: &str) -> bool {
+        self.extractor_manager.enable_extractor(name)
+    }
+
+    pub fn disable_extractor(&mut self, name: &str) -> bool {
+        self.extractor_manager.disable_extractor(name)
+    }
+
+    pub fn list_extractors(&self) -> Vec<String> {
+        self.extractor_manager.list_extractors()
+    }
+
+    pub fn list_enabled_extractors(&self) -> Vec<String> {
+        self.extractor_manager.list_enabled()
+    }
+
+    pub fn reset_extractors(&mut self) {
+        self.extractor_manager.reset_to_defaults();
     }
 }
 

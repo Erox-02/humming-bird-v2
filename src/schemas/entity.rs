@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Entity {
     pub entity_type: EntityType,
     pub value: String,
@@ -30,9 +30,19 @@ impl Entity {
             metadata: HashMap::new(),
         }
     }
+
+    pub fn to_dict(&self) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        map.insert("type".to_string(), self.entity_type.as_str().to_string());
+        map.insert("value".to_string(), self.value.clone());
+        map.insert("start".to_string(), self.start.to_string());
+        map.insert("end".to_string(), self.end.to_string());
+        map.insert("confidence".to_string(), self.confidence.to_string());
+        map
+    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Copy)]
 pub enum EntityType {
     Name,
     Email,
@@ -41,7 +51,6 @@ pub enum EntityType {
     Address,
     Id,
     Medical,
-    Custom(String),
 }
 
 impl From<String> for EntityType {
@@ -54,7 +63,7 @@ impl From<String> for EntityType {
             "ADDRESS" => EntityType::Address,
             "ID" => EntityType::Id,
             "MEDICAL" => EntityType::Medical,
-            _ => EntityType::Custom(s),
+            _ => EntityType::Id,
         }
     }
 }
@@ -69,7 +78,6 @@ impl EntityType {
             EntityType::Address => "ADDRESS",
             EntityType::Id => "ID",
             EntityType::Medical => "MEDICAL",
-            EntityType::Custom(s) => s,
         }
     }
 }

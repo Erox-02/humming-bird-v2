@@ -1,5 +1,4 @@
 use crate::schemas::{Entity, EntityType};
-use std::collections::HashSet;
 
 pub trait EntityExtractor: Send + Sync {
     fn name(&self) -> &str;
