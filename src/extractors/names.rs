@@ -8,96 +8,161 @@ pub struct NameExtractor {
     physician_patterns: Vec<Regex>,
     title_patterns: Vec<Regex>,
     called_patterns: Vec<Regex>,
+    generic_patterns: Vec<Regex>,
 }
 
 impl NameExtractor {
-    const NAME_KEYWORDS: &'static [&'static str] = &[
-        "patient", "name", "full name", "patient's", "dr", "mr", "mrs", "ms",
+    const NAME_WORD: &'static str = concat!(
+        r"(?:",
+        r"\p{Lu}[\p{Ll}]+(?:[-'][\p{Lu}][\p{Ll}]+)*",
+        r"|\p{Lu}\.",
+        r")"
+    );
+
+    const NAME: &'static str = concat!(
+        r"(",
+        r"(?:\p{Lu}[\p{Ll}]+(?:[-'][\p{Lu}][\p{Ll}]+)*|\p{Lu}\.)",
+        r"(?:\s+",
+        r"(?:\p{Lu}[\p{Ll}]+(?:[-'][\p{Lu}][\p{Ll}]+)*|\p{Lu}\.)",
+        r"){0,3}",
+        r")"
+    );
+
+    const STOP_WORDS: &'static [&'static str] = &[
+        "THE", "AND", "OR", "OF", "FOR", "WITH", "FROM", "THIS", "THAT",
+        "THESE", "THOSE", "WAS", "WERE", "IS", "ARE", "AM", "BE", "BEEN",
+        "BEING", "HAS", "HAD", "HAVE", "DO", "DID", "DOES", "PATIENT",
+        "NAME", "FULL", "PHYSICIAN", "DOCTOR", "ATTENDING", "REFERRING",
+        "CONSULTING", "PRIMARY", "CARE", "RESIDENT", "CONSULTANT", "REPORT",
+        "HISTORY", "DIAGNOSIS", "MEDICATION", "PRESCRIPTION", "ADMISSION",
+        "DISCHARGE", "EMERGENCY", "FOLLOW", "UP", "HOSPITAL", "CLINIC",
+        "MEDICAL", "HEALTH", "CENTER", "DEPARTMENT", "LABORATORY", "RESULT",
+        "TEST", "SCAN", "MRI", "CT", "XRAY", "ULTRASOUND",
     ];
-    const PHYSICIAN_KEYWORDS: &'static [&'static str] = &[
-        "attending physician", "referring physician",
-        "consulting physician", "resident", "pcp",
-        "primary care physician", "consultant",
-    ];
-    const TITLE_WORDS: &'static [&'static str] = &[
-        "PATIENT", "NAME", "FULL", "DR", "MR", "MRS", "MS",
-    ];
-    const MEDICAL_WORDS: &'static [&'static str] = &[
-        "MRI", "XRAY", "XRAYS", "REPORT", "SCAN", "CHEST", "BLOOD",
-        "TEST", "LAB", "RESULT", "CT", "ULTRASOUND", "SONOGRAM",
-        "BIOPSY", "CULTURE", "PATHOLOGY", "HISTOLOGY", "CYTOLOGY",
-        "EMERGENCY", "ADMISSION", "DISCHARGE", "DIAGNOSIS",
-        "HISTORY", "PHYSICAL", "MEDICATION", "PRESCRIPTION",
-        "DOSAGE", "FREQUENCY", "ROUTE", "INDICATION", "CONTRAINDICATION",
-    ];
-    
+
     pub fn new() -> Self {
         let mut extractor = Self {
             patient_patterns: Vec::new(),
             physician_patterns: Vec::new(),
             title_patterns: Vec::new(),
             called_patterns: Vec::new(),
+            generic_patterns: Vec::new(),
         };
         extractor.compile_patterns();
         extractor
     }
-    
+
     fn compile_patterns(&mut self) {
         self.patient_patterns = vec![
-            Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Patient Name|Patient's Name|Full Name)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bpatient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bpatient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bContact\s+patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bContact\s+patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bName[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bName[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bdischarge note for patient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bdischarge note for patient\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(&format!(
+                r"(?i)\b(?:patient(?:'s)?\s+name|full\s+name)\s*[:\-]?\s*{}\b",
+                Self::NAME
+            )).unwrap(),
+            Regex::new(&format!(
+                r"(?i)\bpatient\s*[:\-]?\s*{}\b",
+                Self::NAME
+            )).unwrap(),
+            Regex::new(&format!(
+                r"(?i)\bcontact\s+patient\s+{}\b",
+                Self::NAME
+            )).unwrap(),
+            Regex::new(&format!(
+                r"(?i)\bdischarge\s+note\s+for\s+patient\s+{}\b",
+                Self::NAME
+            )).unwrap(),
+            Regex::new(&format!(
+                r"(?i)\bname\s*[:\-]\s*{}\b",
+                Self::NAME
+            )).unwrap(),
         ];
-        
+
         self.physician_patterns = vec![
-            Regex::new(r"(?i)\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Attending|Referring|Consulting)\s+Physician[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Resident|PCP|Primary Care Physician)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bConsultant[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\bConsultant[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Physician|Doctor)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Physician|Doctor)[:\s]+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(&format!(
+                r"(?i)\b(?:attending|referring|consulting)\s+physician\s*[:\-]?\s*{}\b",
+                Self::NAME
+            )).unwrap(),
+            Regex::new(&format!(
+                r"(?i)\bprimary\s+care\s+physician\s*[:\-]?\s*{}\b",
+                Self::NAME
+            )).unwrap(),
+            Regex::new(&format!(
+                r"(?i)\b(?:physician|doctor|consultant|resident|pcp)\s*[:\-]?\s*{}\b",
+                Self::NAME
+            )).unwrap(),
         ];
-        
+
         self.title_patterns = vec![
-            Regex::new(r"(?i)\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:Dr|Mr|Mrs|Ms)\.?\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(&format!(
+                r"(?i)\b(?:Dr|Mr|Mrs|Ms|Prof|Professor|Sir)\.?\s+{}\b",
+                Self::NAME
+            )).unwrap(),
         ];
-        
+
         self.called_patterns = vec![
-            Regex::new(r"(?i)\b(?:called|named)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b").unwrap(),
-            Regex::new(r"(?i)\b(?:called|named)\s+([A-Z]+(?:\s+[A-Z]+){0,2})\b").unwrap(),
+            Regex::new(&format!(
+                r"(?i)\b(?:called|named)\s+{}\b",
+                Self::NAME
+            )).unwrap(),
+        ];
+
+        self.generic_patterns = vec![
+            Regex::new(&format!(r"\b{}\b", Self::NAME)).unwrap(),
         ];
     }
-    
+
     fn is_person_name(&self, value: &str) -> bool {
-        let len = value.len();
-        if len < 2 || len > 50 {
+        let value = value.trim();
+        if value.len() < 2 || value.len() > 80 {
             return false;
         }
         if value.chars().any(|c| c.is_ascii_digit()) {
             return false;
         }
-        
         let parts: Vec<&str> = value.split_whitespace().collect();
+        if parts.is_empty() || parts.len() > 4 {
+            return false;
+        }
         for part in &parts {
-            let upper = part.to_uppercase();
-            if Self::TITLE_WORDS.contains(&upper.as_str()) {
-                return false;
-            }
-            if Self::MEDICAL_WORDS.contains(&upper.as_str()) {
+            let normalized = part
+                .trim_matches(|c: char| !c.is_alphanumeric())
+                .to_uppercase();
+            if Self::STOP_WORDS.contains(&normalized.as_str()) {
                 return false;
             }
         }
-        parts.len() <= 4
+        true
+    }
+
+    fn add_matches(
+        &self,
+        regex: &Regex,
+        text: &str,
+        confidence: f32,
+        entities: &mut Vec<Entity>,
+        detected: &mut HashSet<String>,
+    ) {
+        for caps in regex.captures_iter(text) {
+            let Some(matched) = caps.get(1) else {
+                continue;
+            };
+            let value = matched.as_str().trim();
+            if !self.is_person_name(value) {
+                continue;
+            }
+            let key = value.to_lowercase();
+            if !detected.insert(key) {
+                continue;
+            }
+            entities.push(Entity {
+                entity_type: EntityType::Name,
+                value: value.to_string(),
+                start: matched.start(),
+                end: matched.end(),
+                confidence,
+                placeholder: None,
+                metadata: HashMap::new(),
+            });
+        }
     }
 }
 
@@ -119,87 +184,24 @@ impl EntityExtractor for NameExtractor {
     fn extract(&self, text: &str) -> Vec<Entity> {
         let mut entities = Vec::new();
         let mut detected = HashSet::new();
-        
+
         for pattern in &self.patient_patterns {
-            for caps in pattern.captures_iter(text) {
-                if let Some(matched) = caps.get(1) {
-                    let value = matched.as_str().trim().to_string();
-                    if !detected.contains(&value) && self.is_person_name(&value) {
-                        detected.insert(value.clone());
-                        entities.push(Entity {
-                            entity_type: EntityType::Name,
-                            value,
-                            start: matched.start(),
-                            end: matched.end(),
-                            confidence: 0.80,
-                            placeholder: None,
-                            metadata: HashMap::new(),
-                        });
-                    }
-                }
-            }
+            self.add_matches(pattern, text, 0.95, &mut entities, &mut detected);
         }
-        
         for pattern in &self.physician_patterns {
-            for caps in pattern.captures_iter(text) {
-                if let Some(matched) = caps.get(1) {
-                    let value = matched.as_str().trim().to_string();
-                    if !detected.contains(&value) && self.is_person_name(&value) {
-                        detected.insert(value.clone());
-                        entities.push(Entity {
-                            entity_type: EntityType::Name,
-                            value,
-                            start: matched.start(),
-                            end: matched.end(),
-                            confidence: 0.85,
-                            placeholder: None,
-                            metadata: HashMap::new(),
-                        });
-                    }
-                }
-            }
+            self.add_matches(pattern, text, 0.96, &mut entities, &mut detected);
         }
-        
         for pattern in &self.title_patterns {
-            for caps in pattern.captures_iter(text) {
-                if let Some(matched) = caps.get(1) {
-                    let value = matched.as_str().trim().to_string();
-                    if !detected.contains(&value) && self.is_person_name(&value) {
-                        detected.insert(value.clone());
-                        entities.push(Entity {
-                            entity_type: EntityType::Name,
-                            value,
-                            start: matched.start(),
-                            end: matched.end(),
-                            confidence: 0.80,
-                            placeholder: None,
-                            metadata: HashMap::new(),
-                        });
-                    }
-                }
-            }
+            self.add_matches(pattern, text, 0.98, &mut entities, &mut detected);
         }
-        
         for pattern in &self.called_patterns {
-            for caps in pattern.captures_iter(text) {
-                if let Some(matched) = caps.get(1) {
-                    let value = matched.as_str().trim().to_string();
-                    if !detected.contains(&value) && self.is_person_name(&value) {
-                        detected.insert(value.clone());
-                        entities.push(Entity {
-                            entity_type: EntityType::Name,
-                            value,
-                            start: matched.start(),
-                            end: matched.end(),
-                            confidence: 0.75,
-                            placeholder: None,
-                            metadata: HashMap::new(),
-                        });
-                    }
-                }
-            }
+            self.add_matches(pattern, text, 0.85, &mut entities, &mut detected);
         }
-        
+        for pattern in &self.generic_patterns {
+            self.add_matches(pattern, text, 0.60, &mut entities, &mut detected);
+        }
+
+        entities.sort_by_key(|entity| entity.start);
         entities
     }
 }

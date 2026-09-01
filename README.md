@@ -1,532 +1,615 @@
-Here's the fixed and cleaned-up README:
+[![Crates.io](https://img.shields.io/crates/v/aurek.svg)](https://crates.io/crates/hbp100)
+[![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+# HBP100 v3.1.2
+
+Native Rust contextual privacy firewall for intelligent PII masking in other words a value swapper but with a brain and written by a rustacean . 
+
+Hbp100 is a privacy layer that detects sensitive information locally uses a contextual ml engine to decide whether marked entities should be masked and replaces sensitive info with placeholders and restores them after the llm gives an response .
+
+hbp100 is designed to work with LLMs OCR pipelines APIs and other external processing systems without unnecessarily exposing sensitive information. I use Arch btw (not a larper i use hyprland).
 
 ---
 
-# HBP100 v3.1.0
+## Some random quote
 
-**Native Rust contextual privacy firewall for intelligent PII masking**
+> "Data is a precious thing and will last longer than the systems themselves."
 
-HBP100 is a lightweight privacy layer that detects sensitive information locally, uses a contextual machine learning policy engine to decide whether detected entities should be masked, replaces sensitive values with placeholders, and restores them after external processing.
+>                                                                            — Tim Berners-Lee (Inventor of the World Wide Web)
 
-HBP100 is designed to work with LLMs, OCR pipelines, APIs, and other external processing systems without unnecessarily exposing sensitive information.
-
----
-
-## Philosophy
-
-> Sensitive information should never reach an external system unnecessarily.
-
-HBP100 performs entity detection and privacy decisions locally. Sensitive values are replaced with placeholders before text is sent to an external LLM. The original values remain inside the local metadata vault and can be restored afterward.
 
 ---
 
-## Architecture
+## What's New in v3.1.2
 
-HBP100 separates *entity extraction* from *privacy policy decisions*.
+### NOW SESSIONS WORKS !!!
+
+The biggest change - sessions are now fully integrated into the main API. No more separate HBP100Session class nonsense. Everything goes through the main HBP100 engine like it should've been from the start .
+
+```python
+
+from hbp100 import HBP100
+
+engine = HBP100()
+
+# Stateless (works exactly like before)
+
+result = engine.process("Patient John Doe, MRN: 123456")
+
+# Stateful with session (just add this!)
+
+result = engine.process(
+
+"Patient John Doe, MRN: 123456",
+
+session\_id="my\_session"
+
+)
 
 ```
-                Input Text
-                    │
-                    ▼
-          ┌──────────────────┐
-          │ Entity Extractors│
-          └────────┬─────────┘
-                   │
-                   ▼
-             Detected Entities
-                   │
-                   ▼
-          ┌──────────────────┐
-          │ Contextual Policy│
-          │     Engine       │
-          └────────┬─────────┘
-                   │
-                   ▼
-              MASK / KEEP
-                   │
-          ┌────────┴─────────┐
-          │                  │
-        MASK                KEEP
-          │                  │
-          ▼                  │
-   Placeholder Generator     │
-          │                  │
-          └────────┬─────────┘
-                   ▼
-              Masked Text
-```
 
-The extractor layer determines *what an entity is*. The machine learning policy engine determines *whether that entity should be masked in its context*. This separation allows HBP100 to remain modular while making contextual privacy decisions.
+### good enough py bindings
+
+I actually made the Python bindings not terrible:
+
+- process() returns a proper ProcessResult object (not just a dict)
+
+- restore() handles both stateless and session-aware restoration
+
+- Actual error messages (revolutionary, ik)
+
+
+### Legacy API Removal
+
+Gone:
+
+- HBP100Session class (use session_id parameter instead)
+
+- process_with_session() (use process() with session_id)
+
+- restore_with_session() (use restore() with session_id)
+
+- All the old session management methods nobody used
+
+Why? because nobody was using them except me and even i was getting confused by the duplication .Plus I was depressed about my user count so I simplified things lmao [crying emoji]
 
 ---
 
-## Release History
+## Native Rust Runtime
 
-### v3.1.0 — Sessions + Python API
-
-v3.1.0 adds stateful session support for multi-step LLM workflows while keeping the existing stateless API unchanged.
-
-- Persistent `Session` state for placeholder mappings
-- `SessionManager` for in-memory session lifecycle management
-- Session-aware placeholder generation
-- Per-entity counters continue across calls in the same session
-- `restore_with_session()` restores using accumulated session metadata
-- Session IDs are SHA256-based
-- Sessions are currently stored in memory
-- Stateless `process()` remains unchanged for backward compatibility
-- Python bindings and Python API are part of the supported release surface
-- Rust crate and Python package are both supported
-
-### v3.0.1 — Bug Fixes + Performance
-
-v3.0.1 focused on extractor reliability and runtime performance.
-
-- Extractor regex fixes
-- Performance improvements
-- Native Rust package/runtime continued as the core execution path
-- PyO3-based Python bindings and the Python API were introduced alongside the Rust core
-
----
-
-## What's New in v3.1.0
-
-### Native Rust Runtime
-
-v3 removes the previous Python ML runtime and moves the production inference stack entirely into Rust.
+v3 ditches the Python ML runtime and moves everything to Rust :
 
 ```
-v2
+
+v2 (the dark times)
+
 Python
- └── scikit-learn / LightGBM
-       ↓
-    Python bridge
-       ↓
-      Rust
 
-v3
+|── scikit-learn / LightGBM
+
+   |
+   v
+
+|-Python bridge (slow af)
+
+   |
+   v
+  Rust 
+
+v3 (the good stuff)
+
 Rust
- ├── Extractors
- ├── Feature extraction
- ├── LightGBM inference
- ├── Policy engine
- └── Placeholder system
-```
-
-### Native LightGBM Policy Engine
-
-The v3 policy engine uses LightGBM through the Rust `lightgbm3` crate. The trained model's path is:
+|
+|── Extractors (fast)
+|── Feature extraction (fast)
+|── LightGBM inference (fast af)
+|── Policy engine (fast)
+|── Placeholder system (fast)
+_
 
 ```
+
+### Native lightgbm
+
+The policy engine uses LightGBM through the Rust lightgbm3 (despite being created by microslop, i use it because its better than xgboost) crate. Model lives at:
+
 assets/hbp100-v3.lgb
+
+It just takes too much time to build the lightgbm crate [crying emoji] (i proudly use JetBrainsMono-Regular. see i can still use emoji's hmpf )
+
+### Context awareness
+
+The complete surrounding context is retained when generating the ML feature vector. This means decisions depend on how an entity is used not just what it is.
+
+Example:
+
 ```
 
-The same model artifact can be loaded directly by the Rust runtime.
+"My birthday is 12/03/2010." -> probably keep
 
-### Context-Aware Decisions
+"My MRN is 12/03/2010." -> definitely mask (MRN's like these probably doesnt exist but i made this to make it stand out yk hehe )
 
-The complete surrounding sentence/document context is retained when generating the ML feature vector. This allows decisions to depend on how an entity is being used rather than treating every entity value independently.
-
-For example:
-```
-"My birthday is 12/03/2010."
-"My MRN is 12/03/2010."
 ```
 
-The same-looking value can have completely different privacy implications depending on context.
+Same value different privacy implications. This is why I do the ML thing instead of just regex matching everything.
 
 ---
 
-## Machine Learning
+## ML
 
-The v3 training pipeline is implemented in Rust.
+The training pipeline is in Rust (because why not? python sucks)
 
 ```
+
 dataset.json
-     │
-     ▼
-Dataset Loader
-     │
-     ▼
-Training Samples
-     │
-     ▼
-Feature Extraction
-     │
-     ▼
-LightGBM
-     │
-     ▼
-hbp100-v3.lgb
-```
 
-The dataset contains complete input text, intent, detected entity type, entity value, and the expected "mask" / "keep" decision.
+ │
+ v
+
+Dataset Loader (Rust)
+
+ │
+ v
+
+Training Samples
+
+ │
+ v
+
+Feature Extraction (Rust)
+
+ │
+ v
+
+LightGBM (Rust)
+
+ │
+ v
+
+hbp100-v3.lgb
+
+```
 
 ### Dataset
 
-The samples are split by document rather than randomly splitting individual entities from the same document. This prevents entities from the same document from leaking between training and evaluation sets.
-
-### Feature Space
-
-The current v3 feature extractor produces features for each entity/context sample.
+It was completely generated by deepseek hehe(costed me my all tokens [crying emoji] lol ), i didnt sneak in to stole private info yk.
 
 ### Evaluation
 
-Current held-out evaluation results:
+Current results:
 
-| Metric    | Result |
+| Metric | Result |
+
 | --------- | ------:|
-| Accuracy  | **91.34%** |
-| Precision | **95.57%** |
-| Recall    | **84.59%** |
-| F1 Score  | **89.75%** |
 
-The given benchmarks are from the test dataset (currently lower than the Python version).
+| Accuracy | 91.34% |
 
----
+| Precision | 95.57% |
 
-## Runtime Pipeline
+| Recall | 84.59% |
 
-```
-Input Text
-    │
-    ▼
-Entity Extractors
-    │
-    ▼
-Context + Entity Features
-    │
-    ▼
-LightGBM Policy Engine
-    │
-    ▼
-MASK / KEEP Decision
-    │
-    ▼
-Placeholder Generator
-    │
-    ▼
-Metadata Vault
-    │
-    ▼
-Masked Text
-    │
-    ▼
-External LLM / API / Processor
-    │
-    ▼
-restore()
-    │
-    ▼
-Original Text
-```
+| F1 Score | 89.75% |
 
-Everything required for production inference is executed locally.
+Not perfect but good enough for most use cases.
 
 ---
 
 ## Supported Entities
 
-HBP100 currently includes modular extractors for entities including:
+Modular extractors for:
 
 - Names
-- Email addresses
-- Phone numbers
-- Dates
-- Addresses
-- IDs
-- Medical information
-- Other configurable identifier types
 
-The extractor architecture is modular, allowing additional detectors to be added independently of the ML policy engine.
+- Email addresses
+
+- Phone numbers
+
+- Dates
+
+- Addresses
+
+- IDs (MRN SSN etc.)
+
+- Medical information
+
+- Other configurable stuff
+
+The extractor architecture is highly modular (hmpf) - add your own extractor (basic regex ) without touching the ml code .
 
 ---
 
-## Python API
+## Python API 
 
-HBP100 provides a Python API backed by the same native Rust privacy core.
-
-### Basic processing
+### Old processing
 
 ```python
+
 from hbp100 import HBP100
 
 engine = HBP100()
 
 result = engine.process(
-    "Patient John Doe, MRN: 123456"
+
+"Patient John Doe, MRN: 123456"
+
 )
 
-print(result["masked_text"])
+print(result.masked_text) # not result["masked_text"] anymore
+
 ```
 
-Example output:
-```
-Patient [NAME_1], MRN: [MRN_1]
+Output:
+
 ```
 
-The Python result exposes the processed result as a Python mapping containing fields such as:
-- `masked_text`
-- `entities`
-- `decisions`
-- `has_pii`
-- `metadata`
+Patient [NAME_1], MRN: [ID_1]
 
-The Python layer is an API boundary; the extraction, contextual policy evaluation, and placeholder processing remain implemented in Rust.
+```
+
+ProcessResult object attributes:
+
+- result.masked_text
+
+- result.entities
+
+- result.decisions
+
+- result.has_pii
+
+- result.metadata
+
+- result.session_id (if session used)
+
+### Sessions
+
+```python
+
+from hbp100 import HBP100
+
+engine = HBP100()
+
+# first call
+
+result1 = engine.process(
+
+"Patient John Doe, MRN: 123456",
+
+session\_id="my\_session"
+
+)
+
+print(result1.masked_text) # Patient [NAME_1], MRN: [ID_1]
+
+# second call, same session
+
+result2 = engine.process(
+
+"Patient Jane Smith, MRN: 789012",
+
+session\_id="my\_session"
+
+)
+
+print(result2.masked_text) # Patient [NAME_2], MRN: [ID_2]
+
+# restore using session
+
+restored = engine.restore(
+
+"[NAME\_1] and [NAME\_2] have MRNs [ID\_1] and [ID\_2]",
+
+session\_id="my\_session"
+
+)
+
+print(restored) # John Doe and Jane Smith have MRNs 123456 and 78901
+```
+
+### Intent-driven Process
+
+```python
+
+result = engine.process(
+
+"My birthday is 12/03/2010",
+
+intent="general"
+
+) # kept
+
+result = engine.process(
+
+"My MRN is 12/03/2010", 
+
+intent="hospital\_discharge"
+
+) # masked
+
+```
+
+### Extractorss
+
+```python
+
+# List extractors
+
+print(engine.list_extractors())
+
+# Add custom extractor
+
+engine.add_extractor({
+
+"name": "PAN\_India",
+
+"entity\_type": "PAN",
+
+"pattern": "[A-Z]{5}[0-9]{4}[A-Z]{1}",
+
+"confidence": 0.98,
+
+})
+
+# Enable/disable
+
+engine.disable_extractor("EMAIL")
+
+engine.enable_extractor("EMAIL")
+
+```
 
 ---
 
 ## Rust API
 
-HBP100 exposes a simple Rust API through the `HBP100` type.
-
-### Create an engine
-
 ```rust
+
 use hbp100::HBP100;
 
-let mut engine = HBP100::new();
-```
+let engine = HBP100::new(); // no more mut!
 
-### Process text
-
-```rust
 let result = engine.process(
-    "Patient John Doe, phone 9876543210.",
-    None,
+
+"Patient John Doe, phone 9876543210.",
+
+None,  // no session
+
+None,  // no intent
+
 );
 
 println!("{}", result.masked_text);
+
 ```
 
-The result contains:
-- `result.original_text`
-- `result.masked_text`
-- `result.entities`
-- `result.decisions`
-- `result.metadata`
-- `result.has_pii`
-
-### Intent-aware processing
-
-An optional intent can be supplied to the policy engine:
+### Rust session compitable
 
 ```rust
-let result = engine.process(
-    text,
-    Some("hospital_discharge"),
-);
-```
 
-The intent becomes part of the contextual decision process.
+use hbp100::HBP100;
+
+let engine = HBP100::new();
+
+let session_id = engine.create_session();
+
+let result = engine.process(
+
+"Patient John Doe, MRN: 123456",
+
+Some(&session\_id),
+
+None,
+
+);
+
+let restored = engine.restore(
+
+"[NAME\_1] has MRN [ID\_1]",
+
+Some(&session\_id),
+
+);
+
+```
 
 ---
 
-## Session Management
+## Session managing
 
-HBP100 v3.1.0 adds sessions for workflows where multiple LLM interactions need to share the same placeholder state.
+### sessions? why??
 
-### Why sessions?
+Isnt it obvious? in order to keep up the data even after the chat is closed once .
 
-A stateless call can mask a piece of text and keep its metadata for that operation. LLM workflows often need something stronger: multiple requests in the same interaction must share the same placeholder mappings.
+Example:
 
-For example:
 ```
+
 Request 1:
+
 Patient John Doe, MRN: 123456
-        ↓
-Patient [NAME_1], MRN: [MRN_1]
-```
 
-The session retains:
-```
+    ↓
+
+Patient [NAME_1], MRN: [ID_1]
+Session retains:
 [NAME_1] → John Doe
-[MRN_1]  → 123456
+[ID_1] → 123456
+
+```
+This was drawn by deepseek btw , this one only . [innocent looking shaddy cat emoji]
+
+### Sessionmanager
+
+Sessionmanager maintains persistent placeholder mappings across multiple lllm interactions.
+as process() is called with a session_id, Hbp100 uses a session-aware placeholder generator. Entity counters continue within the session:
+
 ```
 
-A later call using the same session can append new mappings instead of starting from an empty placeholder state.
-
-### SessionManager
-
-`SessionManager` maintains persistent placeholder mappings across multiple LLM interactions.
-
-When `process_with_session()` is called, HBP100 uses a session-aware placeholder generator. Entity counters continue within the session, producing placeholders such as:
-```
 [NAME_1]
 [NAME_2]
-[MRN_1]
-[MRN_2]
+[ID_1]
+[ID_2]
+
 ```
 
-New mappings are appended to the session metadata.
+New mappings append to the session metadata.
 
-Conceptually:
+Session structure:
+
 ```
+
 Session
-├── session ID
+
+├── session ID (SHA256)
 ├── placeholder mappings
 ├── entity counters
 ├── created timestamp
 └── updated timestamp
-```
-
-### Session processing
-
-The session-aware API is intended for multi-step LLM workflows:
 
 ```
+
+### Session workflow
+
+```
+
 Input
-  │
-  ▼
-SessionManager
-  │
-  ▼
-process_with_session()
-  │
-  ├── extract entities
-  ├── contextual policy decision
-  ├── generate session-aware placeholders
-  └── update session metadata
-  │
-  ▼
-Masked text
-  │
-  ▼
-External LLM / API
-  │
-  ▼
-restore_with_session()
-  │
-  ▼
-Restored response
+│
+v
+sessionmanager
+│
+v
+process() with session_id
+
+│
+─ extract entities
+─ contextual policy decision
+─ generate session-aware placeholders
+─ update session metadata
+│
+v
+masked text
+│
+v
+external LLM / API
+│
+v
+restore() with session_id
+│
+v
+restored response
+
 ```
 
-A later call with the same session ID uses the accumulated metadata.
+### storage
 
-### Session storage
+Sessions are currently stored in memory using a HashMap. Session IDs are SHA256-based.(yeah i dont wanna do no std just because i wanna store in memory)
 
-Sessions are currently stored **in memory** using a `HashMap`. Session IDs are generated using SHA256. The current implementation is intentionally memory-only. Persistent disk-backed sessions are planned for a future version.
+Memory-only for now. Disk-backed sessions coming eventually (maybe but not until v4).
 
-### Stateless API compatibility
+### Stateless API unharmed
 
-The existing stateless API remains unchanged:
+The stateless API's are unchanged:
+
 ```rust
-engine.process(...)
+
+engine.process(text, None, None)
+
 ```
 
-Applications that do not need multi-request state can continue using the original API without sessions.
-
-### Python session workflow
-
-The same session concept is exposed through the Python API:
-
-```python
-from hbp100 import HBP100
-
-engine = HBP100()
-
-session_id = engine.create_session()
-
-result = engine.process_with_session(
-    session_id,
-    "Patient John Doe, MRN: 123456"
-)
-
-print(result["masked_text"])
-```
-
-The exact Python method signature follows the released binding API. The important property is that subsequent `process_with_session()` calls using the same session ID reuse the accumulated placeholder metadata.
+No need for sessions if you don't want them (how kind i am) .
 
 ---
 
 ## Restoration
 
-Masked values are stored locally and can be restored after external processing.
+masked values stored locally, restored after llm responds.
 
 ```rust
-let restored = engine.restore(&response);
+
+let restored = engine.restore(&response, None);
+
 ```
 
-Metadata can also be supplied explicitly:
+With session:
 
 ```rust
+
+let restored = engine.restore(&response, Some(&session_id));
+
+```
+
+Explicit metadata:
+
+```rust
+
 let restored = engine.restore_with_metadata(
-    &response,
-    metadata,
-);
-```
 
-The metadata vault remains local to the HBP100 runtime.
+&response,
+
+metadata,
+
+);
+
+```
 
 ---
 
 ## Response Validation
 
-HBP100 can validate returned text before restoration:
+Check returned text before restoration:
 
 ```rust
-let (valid, error) = engine.validate_response(response);
+
+let valid = engine.validate_response(response);
+
 ```
 
-This allows applications to detect invalid or unexpected placeholder manipulation before restoring sensitive values.
+Detects invalid or unexpected placeholder manipulation before restoring sensitive values. trust but verify - Llms hallucinate as hell. man.
 
 ---
 
-## Placeholder System
+## Placeholders
 
-Detected entities selected for masking are replaced with generated placeholders.
+Flagged entities selected for masking get replaced with placeholders:
 
-For example:
 ```
-Input:
+
+input:
 Patient John Doe, phone 9876543210.
 
-Masked:
+masked:
 Patient [NAME_1], phone [PHONE_1].
+
 ```
 
-The original values remain in local metadata:
+Original values stay in local metadata:
+
 ```
-[NAME_1]  → John Doe
+
+[NAME_1] → John Doe
 [PHONE_1] → 9876543210
+
 ```
 
-The external processor only receives the masked representation.
+external api only sees the masked representation. Thats the whole point of this whole thing to be frank .
 
 ---
 
-## Security Model
-
-HBP100 follows a simple principle:
+## Tree
 
 ```
-Sensitive data
-      │
-      ▼
-Local extraction
-      │
-      ▼
-Local ML decision
-      │
-      ▼
-Local masking
-      │
-      ▼
-External system
-```
-
-The external system should only receive the sanitized representation. HBP100 does not require an external AI model to make privacy decisions during inference.
-
----
-
-## Project Structure
-
-```
+(env) [erox@archbtw humming-bird-v3]$ tree
 .
 ├── assets
 │   └── hbp100-v3.lgb
 ├── Cargo.lock
 ├── Cargo.toml
 ├── dataset.json
+├── dev
+│   ├── session.rs
+│   ├── speed.py
+│   ├── test.py
+│   └── test.rs
 ├── LICENSE
 ├── README.md
 └── src
@@ -535,10 +618,12 @@ The external system should only receive the sanitized representation. HBP100 doe
     │   ├── engine.rs
     │   ├── metadata.rs
     │   ├── mod.rs
-    │   └── pipeline.rs
+    │   ├── pipeline.rs
+    │   └── session_manager.rs
     ├── extractors
     │   ├── addresses.rs
     │   ├── base.rs
+    │   ├── config.rs
     │   ├── dates.rs
     │   ├── emails.rs
     │   ├── ids.rs
@@ -563,281 +648,374 @@ The external system should only receive the sanitized representation. HBP100 doe
     │   ├── metadata.rs
     │   ├── mod.rs
     │   ├── restore.rs
+    │   ├── session_aware_generator.rs
     │   └── validator.rs
     ├── policy_engine
     │   ├── context_builder.rs
     │   ├── mod.rs
     │   └── predictor.rs
+    ├── pyproject.toml
     ├── schemas
     │   ├── decision.rs
     │   ├── entity.rs
     │   ├── mod.rs
     │   ├── placeholder.rs
-    │   └── result.rs
+    │   ├── result.rs
+    │   └── session.rs
     └── utils
         ├── helpers.rs
         ├── logger.rs
         └── mod.rs
+
+12 directories, 55 files
+
 ```
 
-11 directories, 46 files
+Tree is pretty convinient . hell yeah
 
 ---
 
-## Model Development
+## Model 
 
-The model can be trained directly from Rust:
+Train from Rust:
 
 ```bash
+
 cargo run --release --bin train
-```
-
-The trained model is stored to:
 
 ```
+
+Model saved to:
+
 assets/hbp100-v3.lgb
-```
 
-The model can then be tested independently:
+Test independently:
 
 ```bash
+
 cargo run --release --bin test
+
 ```
 
-This verifies that the saved LightGBM artifact can be loaded and executed directly by Rust.
+verifies the lighgbm artifact loads and runs in Rust.
 
 ---
 
 ## Installation
 
-HBP100 is distributed as both a **Rust crate** and a **Python package**.
-
-### Rust
-
-Add HBP100 to a Rust project:
+### Rust (heavenly language 2nd after holy c)
 
 ```toml
-[dependencies]
-hbp100 = "3.1.0"
-```
 
-Or install the published crate:
+[dependencies]
+
+hbp100 = "3.1.2"
+
+```
 
 ```bash
+
 cargo install hbp100
+
 ```
 
-### Python
+### Python (it sucks)
 
-The Python API is backed by the native Rust core through PyO3.
+Lol i forgot my pypi verification code and also lost the auth app [skull emoji]. so github is good enough for releases right ?
 
 ```python
+
 from hbp100 import HBP100
 
 engine = HBP100()
 
 result = engine.process(
-    "Patient John Doe, MRN: 123456"
+
+"Patient John Doe, MRN: 123456"
+
 )
 
-print(result["masked_text"])
+print(result.masked_text)
+
 ```
 
-For development/builds from the repository:
+Build from repo:
 
 ```bash
+
 git clone <repository>
+
 cd humming-bird-v3
+
 maturin develop --release
+
 ```
 
-The Python extension should be built in **release mode** for representative performance measurements.
+Now you need to get tht .whl on env
+
+```bash
+
+pip install path/to/*.whl
+
+```
+
+And it will auto install. but dont be a rookie pip only works when venv is activated. or you need the python -c first
+
+Build in release mode for performance. Debug mode is slooooow.
 
 ---
 
 ## Example
 
 ```rust
+
 use hbp100::HBP100;
 
 fn main() {
-    let mut engine = HBP100::new();
 
-    let text = "
-        Patient John Doe.
-        Email john@example.com.
-        Prescribed Metformin 500mg daily.
-    ";
+let engine = HBP100::new();
 
-    let result = engine.process(
-        text,
-        Some("hospital_discharge"),
+let text = "
+
+    Patient John Doe.
+
+    Email john\@example.com.
+
+    Prescribed Metformin 500mg daily.
+
+";
+
+let result = engine.process(
+
+    text,
+
+    None,
+
+    Some("hospital\_discharge"),
+
+);
+
+println!("Masked:");
+
+println!("{}", result.masked\_text);
+
+println!("\nDecisions:");
+
+for decision in &result.decisions {
+
+    println!(
+
+        "{:?} -> {:?} ({:.4})",
+
+        decision.entity.entity\_type,
+
+        decision.decision,
+
+        decision.confidence
+
     );
 
-    println!("Masked:");
-    println!("{}", result.masked_text);
-
-    println!("\nDecisions:");
-    for decision in &result.decisions {
-        println!(
-            "{:?} -> {:?} ({:.4})",
-            decision.entity.entity_type,
-            decision.decision,
-            decision.confidence
-        );
-    }
 }
+
+}
+
 ```
 
 ---
 
-## Hybrid Architecture
+## How to use in Python 
 
-HBP100 intentionally combines deterministic extraction with a LightGBM model.
+```python
+
+from hbp100 import HBP100
+
+# 1. Initialize
+
+engine = HBP100()
+
+session_id = "chat_conversation"
+
+# 2. First message
+
+user1 = "My name is John Doe and my MRN is 123456"
+
+result1 = engine.process(user1, session_id=session_id)
+
+print(f"Masked: {result1.masked_text}")
+
+# 3. LLM response (simulated)
+
+llm_response1 = f"Hello {result1.metadata['NAME_1']}, your MRN is {result1.metadata['ID_1']}."
+
+print(f"LLM: {llm_response1}")
+
+# 4. Restore for user
+
+restored1 = engine.restore(llm_response1, session_id=session_id)
+
+print(f"Display: {restored1}")
+
+# 5. Second message with new entities
+
+user2 = "My doctor is Dr. Jane Smith and my email is jane@example.com"
+
+result2 = engine.process(user2, session_id=session_id)
+
+print(f"Masked: {result2.masked_text}")
+
+# 6. LLM response with all placeholders
+
+llm_response2 = (
+
+"[NAME\_1] ([EMAIL\_1]) is treated by [NAME\_2]. "
+
+"MRN: [ID\_1] is on file."
+
+)
+
+print(f"LLM: {llm_response2}")
+
+# 7. Restore full conversation
+
+restored2 = engine.restore(llm_response2, session_id=session_id)
+
+print(f"Display: {restored2}")
 
 ```
-┌─────────────────────────────┐
-│     Deterministic Layer     │
-│                             │
-│ Regex / structured          │
-│ entity extraction           │
-└──────────────┬──────────────┘
-               │
-               ▼
-        Candidate Entities
-               │
-               ▼
-┌─────────────────────────────┐
-│      ML Policy Layer        │
-│                             │
-│ Contextual LightGBM model   │
-└──────────────┬──────────────┘
-               │
-               ▼
-          MASK / KEEP
-```
-
-The extractor does not need to decide whether an entity is sensitive enough to expose. The policy engine makes that decision using the complete contextual feature representation.
 
 ---
 
 ## Applications
 
-HBP100 can be used as a local privacy layer for:
-
 - Healthcare document processing
+
 - Insurance workflows
+
 - OCR pipelines
+
 - AI assistants
+
 - LLM applications
+
 - Customer support systems
+
 - Data preprocessing
+
 - Privacy-preserving API workflows
+
 - External AI processing pipelines
 
 ---
 
 ## Performance
 
-HBP100 is designed as a lightweight local inference system. The runtime uses:
-
-- Native Rust execution
-- Native LightGBM inference
-- Modular deterministic extractors
-- Local feature extraction
-- Reversible placeholder masking
-- Optional Python bindings through PyO3
+Native Rust execution + LightGBM inference + modular extractors.
 
 ### Python API benchmark
 
-A release-mode Python binding benchmark on an Intel Core i5-1135G7(undervolted) produced:
+Release-mode on Intel Core i5-1135G7 (undervolted):
 
 ```
+
 100,000 iterations
+
 5.3999 seconds
+
 0.0540 ms/text
+
 18,519 texts/sec
-```
-
-Longer 1,000,000-iteration runs measured approximately:
 
 ```
-0.063–0.070 ms/text
-~14,000–16,000 texts/sec
+
+Test it yourself i have the py script ready on dev/speed.py .
+
+Single-process benchmarks. depending on hardware, workload, Python overhead, CPU power limits, etc.
+
+tldr: I am SPEDDDDDDD [flash emoji if exists].
+maybe i shld write it in assembly for more speed or even binary(joking).
+
+Model quality:
+
 ```
+Accuracy 91.34%
+Precision 95.57%
+Recall 84.59%
+F1 89.75%
 
-These are single-process benchmark results and should not be treated as universal throughput guarantees. Performance depends on hardware, workload, Python/runtime overhead, CPU power limits, and execution environment.
-
-Model quality is currently:
-
-```
-Accuracy   91.34%
-Precision  95.57%
-Recall     84.59%
-F1         89.75%
 ```
 
 ---
 
 ## Limitations
 
-HBP100 does not guarantee perfect entity detection or privacy protection. Its effectiveness depends on:
+Doesn't guarantee perfect entity detection or privacy protection. Effectiveness depends on:
 
 - Extractor coverage
-- Feature quality
-- Training data quality
-- Model performance
-- Input distribution
-- Correct handling of placeholders by downstream systems
 
-HBP100 is a privacy-preserving framework and should not be considered a complete compliance, security, or data-loss-prevention solution by itself. Applications handling sensitive information should use appropriate security controls and validation around HBP100.
+- Feature quality
+
+- Training data quality
+
+- Model performance
+
+- Input distribution
+
+Its a tool. not a silver bullet. Use appropriate security controls around it.
 
 ---
 
 ## Technology
 
-HBP100 v3 is built with:
-
 - Rust
+
 - lightgbm3
+
 - Serde
+
 - Regex
+
 - Chrono
+
 - Modular Rust extractors
+
 - PyO3 Python bindings
+
 - SHA256 session IDs
 
 ---
 
 ## Roadmap
 
-Potential future work includes:
-
 - Additional entity extractors
-- Improved contextual features
-- Larger and more diverse training datasets
-- Persistent disk-backed sessions
-- Additional model evaluation
-- Further runtime optimization
-- More LLM/provider integrations
-- Batch and concurrent processing
 
-Session-aware metadata handling is now implemented in v3.1.0.
+- Improved contextual features
+
+- Larger training datasets
+
+- Persistent disk-backed sessions (eventually, not before v4)
+
+- Runtime optimization (its already optimized as hell but why not)
+
+- Llm favored integration
+
+- Rayon integration for more brute performane
 
 ---
 
 ## License
 
-MIT License
+MIT License (i wanna make it gpl but then no one gonna use it [wait no one use it])
 
 ---
 
 ## Author
 
-*Dipanjan Dutta*
+Dipanjan Dutta
+
+P.S. I use Arch btw.
 
 ---
 
 ## Version
 
-**HBP100 v3.1.0**
+HBP100 v3.1.2

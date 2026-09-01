@@ -1,1 +1,1 @@
-pub use crate::core::metadata::MetadataVault;
+pub use crate::MetadataVault;
